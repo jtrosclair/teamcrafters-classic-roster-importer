@@ -22,15 +22,19 @@ those real players: names, ratings, positions, class years, height/weight, and s
 
 Nothing is uploaded to EA until *you* press EA's own **Save**.
 
+## Supported Games/Consoles
+
+This extension is a simple update utility for CFB 27 Team Builder. PC's and Consoles are both supported on any device that can log in and download from Team Builder.
+
 ## What you need
 
 - **Google Chrome** (the only browser this has been tested in)
 - An EA account with access to **College Football 27 Team Builder**
-- No TeamCrafters account needed — the classic rosters are public
+- No TeamCrafters account needed — the classic rosters are public AT THIS TIME.
 
 ## Install
 
-This isn't in the Chrome Web Store yet, so you load it manually. Takes about a minute.
+This isn't in the Chrome Web Store, so you load it manually. Takes about a minute.
 
 1. On this page, click the green **Code** button → **Download ZIP**.
 2. Unzip it. You'll get a folder named `teamcrafters-classic-roster-importer-main`.
@@ -44,16 +48,16 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 
 ## Use it
 
-1. Go to a classic team page on TeamCrafters, e.g.
-   `teamcrafters.net/app/classic-rosters/ncaa-13/alabama`
+1. Go to a classic team page on TeamCrafters, find them at.
+   `teamcrafters.net/app/classic-rosters`
 2. Click the blue **"Copy roster for EA Team Builder"** button (bottom-right).
-3. Open your team in EA College Football 27 Team Builder.
-4. Open the **roster presets** list. Where "Cupcake" normally sits, you'll now see
+3. Open your team in EA College Football 27 Team Builder. Go to the "Roster" tab.
+4. On the **roster presets** dropdown, in the middle, you'll now see something like
    **"TeamCrafters: Alabama (NCAA 13)"**. Pick it.
-5. The roster loads. Review it, then use EA's own **Save**.
+5. The roster loads. Review it, then save, load up, and play on!
 
 Click the extension's toolbar icon any time to see what's currently copied, preview it on
-TeamCrafters, or clear it. Clearing it puts "Cupcake" back.
+TeamCrafters, or clear it. While a local team is saved, so the names persist, the auto name-generation function is disabled, you'll need to unload your team to re-enable it.
 
 ## Troubleshooting
 
@@ -233,16 +237,14 @@ console.log(out.stats);
 ```
 
 Debugging the EA side: open DevTools on the Team Builder tab, and make sure the console's
-log-level filter includes **Info** — otherwise `console.log` output is silently hidden.
+log-level filter includes **Info** — otherwise `console.log` output is silently hidden. Disable breakpoints because Team Builder has an anti-debugging auto-breakpoint that gets enabled when you open up Dev Tools.
 
 ## Contributing
 
 Issues and pull requests welcome. Especially useful:
 
-- **Richer appearance mapping.** `reference/portrait-catalog.json` has 5,041 complexion-indexed
-  heads; the merge currently uses four (one per skin-tone bucket).
-- **More rating conversions.** Older-era games lack many modern ratings; converting them properly
-  needs verified per-position formulas, not guesses.
+- **Equipment loadout editing** The json file uploaded to Team Builder supports custom equipment loadouts,
+  although it isn't present on the web UI. We could theoretically inject our own equipment layouts with this method
 - **Bug reports with a broken team file attached** — that's how most of the loader quirks here
   were found.
 
