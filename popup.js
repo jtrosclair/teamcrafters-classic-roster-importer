@@ -30,7 +30,6 @@ function render(stored) {
 
   const stats = stored.stats || {};
   const extra = [];
-  if (stats.removedFiller) extra.push(`${stats.removedFiller} filler slots removed`);
   if (stats.unplacedPlayers) extra.push(`${stats.unplacedPlayers} players didn’t fit`);
 
   statusEl.className = 'status-card';

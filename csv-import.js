@@ -47,8 +47,8 @@
     'RPF','LBK','IBL','KPW','KAC','RET','STA','INJ','TGH','LSP',
   ];
 
-  // OVR is derived, not authored — leave it blank in the CSV and it gets calculated on import.
-  // Every other rating must be present and 0-99.
+  // OVR is derived, not authored — it's always calculated on import, and a CSV that supplies
+  // its own value is rejected. Every other rating must be present and 0-99.
   const REQUIRED_RATINGS = RATING_KEYS.filter((k) => k !== 'OVR');
 
   // A roster has to be able to field a team. These are EA's practical minimums per position;
@@ -63,11 +63,11 @@
   // Don't build a wall of thousands of messages for a badly-formed file.
   const MAX_COLLECTED_ERRORS = 100;
 
-  // Overall rating from the individual ratings. Not yet implemented — the real formula is
-  // position/archetype weighted. Until it lands, a blank OVR simply keeps the base template's
-  // value for that slot and the importer says so.
-  function computeOverall(/* player */) {
-    return null;
+  // Both values are derived from the CFB 27 position/archetype weights. CSV-provided OVR and
+  // archetype values are intentionally ignored: ratings are always the source of truth.
+  function computePositionRating(player) {
+    return window.TCCfb27PositionOvrCalculator
+      ?.calculateCfb27PositionRating(player.position, player.ratings) ?? null;
   }
 
   // --- CSV parsing -----------------------------------------------------------------------
@@ -191,14 +191,12 @@
         }
         ratings[key] = Math.round(n);
       }
-      // OVR is optional: blank means "calculate it".
-      if (r.OVR !== '' && r.OVR != null) {
-        const ovr = num(r.OVR);
-        if (ovr == null || ovr < 0 || ovr > 99) {
-          if (errors.length < MAX_COLLECTED_ERRORS) {
-            errors.push(`Row ${line} (${first} ${last}): OVR is "${r.OVR}" — must be a number from 0 to 99, or blank to calculate it.`);
-          }
-        } else ratings.OVR = Math.round(ovr);
+      // OVR is always calculated from the ratings — a CSV that supplies its own value is
+      // rejected rather than silently overridden, so a stale number can't look authoritative.
+      if (r.OVR !== undefined && r.OVR !== '' && r.OVR != null) {
+        if (errors.length < MAX_COLLECTED_ERRORS) {
+          errors.push(`Row ${line} (${first} ${last}): OVR is "${r.OVR}" — remove it, OVR is always calculated from the ratings.`);
+        }
       }
 
       const classRaw = String(r.classYear ?? '').trim().toUpperCase();
@@ -234,7 +232,7 @@
         weightLbs: weight ?? 200,
         isLefty: bool(r.isLefty),
         devTrait: num(r.devTrait),
-        archetypeId: num(r.archetypeId),
+        archetypeId: null,
         portraitId,
         skinToneCode: skin,
         ratings,
@@ -266,16 +264,19 @@
     }
     if (errors.length) return { errors, warnings, clipboard: null };
 
-    // --- derive OVR where the CSV left it blank ---
+    // --- derive archetype and OVR from the position-specific CFB 27 weights ---
     let uncalculated = 0;
     for (const p of players) {
-      if (p.ratings.OVR != null) continue;
-      const ovr = computeOverall(p);
-      if (ovr != null) p.ratings.OVR = ovr;
-      else uncalculated++;
+      const rating = computePositionRating(p);
+      if (rating != null) {
+        p.ratings.OVR = rating.overall;
+        p.archetypeId = rating.archetype;
+      } else {
+        uncalculated++;
+      }
     }
     if (uncalculated) {
-      warnings.push(`${uncalculated} player(s) had no OVR. Automatic OVR calculation isn't wired up yet, so those keep the base template's overall rating — set OVR in the CSV to control it.`);
+      warnings.push(`${uncalculated} player(s) could not have an archetype or OVR calculated, so those keep the base template's values.`);
     }
 
     // roster-merge.js pairs players to slots in the order given, best-first within each
