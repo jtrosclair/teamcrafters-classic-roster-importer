@@ -21,11 +21,10 @@
     QB: 0, HB: 1, FB: 2, WR: 3, TE: 4, LT: 5, LG: 6, C: 7, RG: 8, RT: 9, LE: 10, RE: 11,
     DT: 12, LOLB: 13, MLB: 14, ROLB: 15, CB: 16, FS: 17, SS: 18, K: 19, P: 20,
   };
-  // Common alternates people will type in a spreadsheet.
-  const POSITION_ALIASES = {
-    RB: 'HB', OT: 'LT', OG: 'LG', G: 'LG', T: 'LT', DE: 'LE', OLB: 'LOLB', ILB: 'MLB',
-    LILB: 'MLB', RILB: 'MLB', LCB: 'CB', RCB: 'CB', S: 'FS', SAF: 'FS', PK: 'K', ATH: 'WR',
-  };
+  // Positions must be spelled out exactly — no RB/OT/OLB/S-style aliases. The position
+  // minimums below are specific to a side (LT vs RT, LOLB vs ROLB, FS vs SS); a generic
+  // alias would silently satisfy the wrong one, so this only accepts the real codes.
+  const VALID_POSITIONS = Object.keys(POSITION_ABBREV_TO_EA_CODE);
 
   // EA's PLYR_SCHOOLYEAR is a plain 0-3 scale.
   const CLASS_YEAR_TO_CODE = {
@@ -134,8 +133,7 @@
     return num(s);
   }
   function positionCode(v) {
-    let s = String(v ?? '').trim().toUpperCase();
-    if (POSITION_ALIASES[s]) s = POSITION_ALIASES[s];
+    const s = String(v ?? '').trim().toUpperCase();
     return { abbrev: s, code: POSITION_ABBREV_TO_EA_CODE[s] };
   }
 
@@ -168,7 +166,10 @@
 
       const pos = positionCode(r.position);
       if (pos.code === undefined) {
-        errors.push(`Row ${line} (${first} ${last}): unknown position "${r.position}".`);
+        errors.push(
+          `Row ${line} (${first} ${last}): position "${r.position}" isn't recognized. ` +
+          `Positions must be spelled out exactly — one of: ${VALID_POSITIONS.join(', ')}.`
+        );
         return;
       }
 
