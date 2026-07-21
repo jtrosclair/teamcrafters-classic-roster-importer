@@ -51,3 +51,8 @@ chrome.storage.local.get(STORAGE_KEY, (result) => {
 document.getElementById('clearBtn').addEventListener('click', () => {
   chrome.storage.local.remove(STORAGE_KEY, () => render(null));
 });
+
+document.getElementById('csvLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.runtime.openOptionsPage();
+});

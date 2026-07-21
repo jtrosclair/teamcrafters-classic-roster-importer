@@ -22,13 +22,8 @@
   const DEFAULT_LABEL = 'Copy roster for EA Team Builder';
   const POLL_INTERVAL_MS = 400;
 
-  // Sentinel asset URLs the injected EA preset points at. They look like real EA CDN asset URLs
-  // (so EA's loader fetches them normally) but carry a "_teamcrafters.json" marker that inject.js
-  // recognizes and answers with our stored roster/visuals instead of hitting the network.
-  const ROSTER_URL =
-    'https://cdn.mcr.ea.com/303/teamcrafters/files/tu1-2c74c88433_teamcrafters.json/0-applicationjson-roster.json';
-  const VISUALS_URL =
-    'https://cdn.mcr.ea.com/303/teamcrafters/files/tu1-2c74c88433_teamcrafters.json/0-applicationjson-character_visuals.json';
+  // Sentinel asset URLs live in roster-merge.js so the CSV importer shares them.
+  const { ROSTER_URL, VISUALS_URL } = window.TCRosterMerge;
 
   function parseRouteParams() {
     const match = location.pathname.match(/^\/app\/classic-rosters\/([^/]+)\/([^/]+)/);

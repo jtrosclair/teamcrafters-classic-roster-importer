@@ -59,6 +59,18 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 Click the extension's toolbar icon any time to see what's currently copied, preview it on
 TeamCrafters, or clear it. While a local team is saved, so the names persist, the auto name-generation function is disabled, you'll need to unload your team to re-enable it.
 
+## Or build a roster from a spreadsheet
+
+You don't have to start from a TeamCrafters team — you can bring your own roster in from a CSV.
+
+1. Click the extension's toolbar icon and choose **"import a roster from a CSV"**.
+2. Click **Download sample-roster.csv**. It's a complete, valid 85-player roster with every column filled in.
+3. Open it in Excel or Google Sheets, replace the players with whatever you want, and save as CSV.
+4. Back on that page, give the roster a name, pick your file, and hit **Import roster**.
+5. It shows up in Team Builder's presets exactly like a copied TeamCrafters roster.
+
+Only `firstName`, `lastName`, and `position` are required. Leave any other cell blank and that value stays as the base template's. The import page has a full column reference with accepted values, and it'll tell you exactly which row and column to fix if something's off.
+
 ## Troubleshooting
 
 **The "Copy roster" button doesn't appear.**
@@ -122,6 +134,9 @@ closure-bound and effectively unreachable in the production build). It:
 | `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
 | `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
+| `options.html` / `options.js` | — | — | CSV import page (file picker, validation, sample download) |
+| `csv-import.js` | — | — | CSV parsing + mapping into the normalized roster shape |
+| `sample-roster.csv` | — | — | Complete 85-player sample, generated from the base template |
 | `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
 | `reference/` | — | — | EA head catalog + sample team payload, reference only |
 
@@ -149,6 +164,15 @@ Encodings worth knowing, all confirmed against real team files:
   CB, FS, SS, K, P)
 - A visuals entry's `genericHeadName` recipe ends in its complexion digit, which **must** equal
   that entry's `skinTone`
+
+## Two ways in, one pipeline
+
+There are two sources for a roster, and they converge immediately:
+
+- `teamcrafters-copy.js` fetches the export API on a TeamCrafters page.
+- `csv-import.js` parses a user-supplied CSV on the options page.
+
+Both produce the **same normalized shape** (documented below), which is handed to `roster-merge.js`. Everything after that point — position matching, merge rules, wire encodings, storage, and serving — is identical. If you add a third source, produce that shape and you're done.
 
 ## The roster export API
 

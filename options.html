@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Import roster from CSV — TeamCrafters</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 0 0 48px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1b1f24; background: #f6f7f9;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 24px; background: linear-gradient(135deg, #2b7cf0, #0f4fb0); color: #fff;
+  }
+  header img { width: 32px; height: 32px; border-radius: 7px; }
+  header h1 { font-size: 17px; margin: 0; }
+  main { max-width: 720px; margin: 24px auto; padding: 0 20px; }
+  .card {
+    background: #fff; border: 1px solid #e2e5ea; border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 16px;
+  }
+  h2 { font-size: 15px; margin: 0 0 6px; }
+  p, li { font-size: 13.5px; line-height: 1.6; color: #384049; }
+  p.sub { color: #5f6b7a; margin-top: 0; }
+  code { background: #f0f2f5; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+  button, .btn {
+    display: inline-block; padding: 9px 14px; border-radius: 6px; border: none;
+    background: #1a73e8; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  button:hover { background: #1668d4; }
+  button:disabled { background: #c7c7c7; cursor: not-allowed; }
+  button.secondary { background: #fff; color: #333; border: 1px solid #d7dbe0; }
+  button.secondary:hover { background: #f2f4f6; }
+  input[type="text"] {
+    width: 100%; box-sizing: border-box; padding: 9px 10px; font-size: 13px;
+    border: 1px solid #d7dbe0; border-radius: 6px; margin-bottom: 12px;
+  }
+  input[type="file"] { font-size: 13px; margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .result { margin-top: 14px; font-size: 13px; line-height: 1.6; border-radius: 8px; padding: 12px 14px; }
+  .result.ok { background: #e9f7ee; border: 1px solid #b7e0c4; color: #1c5b31; }
+  .result.err { background: #fdecec; border: 1px solid #f3c2c2; color: #8c1d1d; }
+  .result.warn { background: #fff8e6; border: 1px solid #f0dfae; color: #6b5310; margin-top: 10px; }
+  .result ul { margin: 6px 0 0; padding-left: 18px; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #1a73e8; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12.5px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eceef1; vertical-align: top; }
+  th { color: #5f6b7a; font-weight: 600; }
+  .muted { color: #5f6b7a; font-size: 12.5px; }
+</style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon48.png" alt="">
+    <h1>Import a roster from a CSV</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>1. Start from the sample</h2>
+      <p class="sub">
+        The sample is a complete, valid 85-player roster with every column filled in. Open it in
+        Excel or Google Sheets, change the players to whatever you want, and save it as CSV.
+      </p>
+      <button id="downloadSample" class="secondary">⬇ Download sample-roster.csv</button>
+    </div>
+
+    <div class="card">
+      <h2>2. Upload your edited CSV</h2>
+      <p class="sub">
+        Only <code>firstName</code>, <code>lastName</code> and <code>position</code> are required.
+        Leave any other cell blank and that value stays as the base template's.
+      </p>
+      <input type="text" id="teamName" placeholder="Roster name (shows in the Team Builder presets list)">
+      <input type="file" id="csvFile" accept=".csv,text/csv">
+      <div class="row">
+        <button id="importBtn" disabled>Import roster</button>
+        <span class="muted" id="fileHint">No file chosen</span>
+      </div>
+      <div id="result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Column reference</h2>
+      <details>
+        <summary>Show all columns and accepted values</summary>
+        <table>
+          <tr><th>Column</th><th>Accepted values</th></tr>
+          <tr><td><code>firstName</code>, <code>lastName</code></td><td><b>Required.</b> Any text.</td></tr>
+          <tr><td><code>position</code></td><td><b>Required.</b> QB, HB, FB, WR, TE, LT, LG, C, RG, RT, LE, RE, DT, LOLB, MLB, ROLB, CB, FS, SS, K, P. (RB, OT, OG, DE, OLB, S also accepted.)</td></tr>
+          <tr><td><code>jerseyNumber</code></td><td>0–99</td></tr>
+          <tr><td><code>classYear</code></td><td>FR, SO, JR, SR (or Freshman/Sophomore/Junior/Senior)</td></tr>
+          <tr><td><code>heightInches</code></td><td>Inches (<code>74</code>) or feet-inches (<code>6'2"</code>)</td></tr>
+          <tr><td><code>weightLbs</code></td><td>Real pounds, e.g. <code>209</code></td></tr>
+          <tr><td><code>isLefty</code></td><td>TRUE / FALSE</td></tr>
+          <tr><td><code>skinTone</code></td><td>0–7 &nbsp; (0–1 light, 7 medium-light, 2 medium, 3 medium-dark, 4–6 dark)</td></tr>
+          <tr><td><code>devTrait</code></td><td>0 Normal, 1 Impact, 2 Star, 3 Elite</td></tr>
+          <tr><td>Ratings</td><td>0–99 each: OVR, SPD, STR, AGI, ACC, AWR, BTK, TRK, COD, BCV, SFA, SPM, JKM, CAR, CTH, SRR, MRR, DRR, CIT, SPC, RLS, JMP, THP, SAC, MAC, DAC, RUN, TUP, BSK, PAC, TAK, POW, PMV, FMV, BSH, PUR, PRC, MCV, ZCV, PRS, PBK, PBP, PBF, RBK, RBP, RPF, LBK, IBL, KPW, KAC, RET, STA, INJ, TGH, LSP</td></tr>
+        </table>
+        <p class="muted">
+          Players are matched to roster slots by position, best overall rating first. If you have
+          more players at a position than the template does, the extras fill open spots elsewhere;
+          if you have fewer, the leftover template players are removed.
+        </p>
+      </details>
+    </div>
+  </main>
+
+  <script src="roster-merge.js"></script>
+  <script src="csv-import.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

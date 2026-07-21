@@ -20,35 +20,59 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "https://www.ea.com/games/ea-sports-college-football/team-builder/*",
     "https://www.teamcrafters.net/app/classic-rosters/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.ea.com/games/ea-sports-college-football/team-builder/*"],
-      "js": ["inject.js"],
+      "matches": [
+        "https://www.ea.com/games/ea-sports-college-football/team-builder/*"
+      ],
+      "js": [
+        "inject.js"
+      ],
       "world": "MAIN",
       "run_at": "document_start"
     },
     {
-      "matches": ["https://www.ea.com/games/ea-sports-college-football/team-builder/*"],
-      "js": ["ea-bridge.js"],
+      "matches": [
+        "https://www.ea.com/games/ea-sports-college-football/team-builder/*"
+      ],
+      "js": [
+        "ea-bridge.js"
+      ],
       "world": "ISOLATED",
       "run_at": "document_start"
     },
     {
-      "matches": ["https://www.teamcrafters.net/app/classic-rosters/*"],
-      "js": ["roster-merge.js", "teamcrafters-copy.js"],
+      "matches": [
+        "https://www.teamcrafters.net/app/classic-rosters/*"
+      ],
+      "js": [
+        "roster-merge.js",
+        "teamcrafters-copy.js"
+      ],
       "world": "ISOLATED",
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["base-template/roster.json", "base-template/character_visuals.json"],
-      "matches": ["https://www.teamcrafters.net/*"]
+      "resources": [
+        "base-template/roster.json",
+        "base-template/character_visuals.json"
+      ],
+      "matches": [
+        "https://www.teamcrafters.net/*"
+      ]
     }
-  ]
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
 }
