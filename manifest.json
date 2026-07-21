@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "TeamCrafters Classic Roster Importer",
+  "short_name": "Classic Roster Importer",
+  "version": "2.0.0",
+  "author": "TeamCrafters",
+  "description": "By TeamCrafters. Copy a classic (NCAA14-and-older) TeamCrafters roster, then load it in EA College Football Team Builder as an \"Import from TeamCrafters\" preset.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.ea.com/*",
+    "https://www.teamcrafters.net/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.ea.com/*"],
+      "js": ["inject.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.ea.com/*"],
+      "js": ["ea-bridge.js"],
+      "world": "ISOLATED",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.teamcrafters.net/app/classic-rosters/*"],
+      "js": ["roster-merge.js", "teamcrafters-copy.js"],
+      "world": "ISOLATED",
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["base-template/roster.json", "base-template/character_visuals.json"],
+      "matches": ["https://www.teamcrafters.net/*"]
+    }
+  ]
+}

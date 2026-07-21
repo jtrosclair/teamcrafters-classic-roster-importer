@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TeamCrafters Classic Roster Importer</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0;
+    width: 320px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1b1f24;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #2b7cf0, #0f4fb0);
+    color: #fff;
+  }
+  header img { width: 28px; height: 28px; border-radius: 6px; }
+  header h1 { font-size: 14px; margin: 0; line-height: 1.3; }
+  main { padding: 16px; }
+  .status-card {
+    border: 1px solid #e2e5ea;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .status-card.empty { color: #5f6b7a; }
+  .status-card .team-name { font-weight: 600; font-size: 14px; color: #0f4fb0; }
+  .status-card .meta { color: #5f6b7a; margin-top: 2px; }
+  .status-card .meta a { color: #2b7cf0; text-decoration: none; font-weight: 600; }
+  .status-card .meta a:hover { text-decoration: underline; }
+  .hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #5f6b7a;
+    line-height: 1.5;
+  }
+  button {
+    margin-top: 12px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d7dbe0;
+    border-radius: 6px;
+    background: #f5f6f8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #b00020;
+  }
+  button:hover { background: #eceef1; }
+  footer {
+    padding: 10px 16px 14px;
+    font-size: 11px;
+    color: #8a94a3;
+    line-height: 1.5;
+    border-top: 1px solid #eef0f3;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon48.png" alt="">
+    <h1>TeamCrafters Classic Roster Importer</h1>
+  </header>
+  <main>
+    <div id="status" class="status-card empty">Loading…</div>
+    <button id="clearBtn" style="display:none;">Clear copied roster</button>
+    <div class="hint">
+      1. On a classic (NCAA14-and-older) team page on teamcrafters.net, click
+      "Copy roster for EA Team Builder".<br>
+      2. In EA College Football Team Builder, open the roster presets and pick
+      <b>"Import from TeamCrafters"</b> — it loads the copied roster.
+    </div>
+  </main>
+  <footer>
+    Built by TeamCrafters. Not affiliated with or endorsed by EA. Nothing is
+    uploaded until you press EA's own Save button.
+  </footer>
+  <script src="popup.js"></script>
+</body>
+</html>
