@@ -1,76 +1,265 @@
 # TeamCrafters Classic Roster Importer
 
-A browser extension by TeamCrafters that copies a **classic** (NCAA14-and-older) TeamCrafters
-roster and loads it into EA Sports College Football Team Builder as a roster **preset** —
-"Import from TeamCrafters" — using EA's own preset loader.
+A Chrome extension that copies a **classic** college football roster (NCAA 14 and older) from
+[TeamCrafters](https://www.teamcrafters.net) into **EA Sports College Football 27 Team Builder**,
+by adding it to Team Builder's own roster-presets list.
 
 Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Electronic Arts.
 
+> **Status:** verified against EA Sports College Football 27 Team Builder as of July 2026.
+> It works by reading and adjusting the data Team Builder already loads, so an EA update can
+> break it. If it stops working, please [open an issue](../../issues).
+
+---
+
+# For users
+
 ## What it does
 
-1. On a classic roster team page (`teamcrafters.net/app/classic-rosters/<game>/<team>`), an
-   injected **"Copy roster for EA Team Builder"** button fetches a normalized export of that
-   team, merges it onto a bundled EA base template to produce a complete `roster.json` +
-   `character_visuals.json` pair, and stores that locally in the browser (`chrome.storage.local`).
-2. In EA College Football Team Builder (`www.ea.com`), the extension replaces the **Cupcake**
-   entry in the roster presets list with **"TeamCrafters: &lt;team&gt; (&lt;game&gt;)"** (it reuses
-   Cupcake's real preset id so the loaded roster gets a valid `templateId`). Selecting it makes
-   EA's own loader fetch our roster + visuals and replace the whole roster — the same way its
-   built-in presets work. Clearing the copied roster restores Cupcake.
-3. Nothing is uploaded until you use EA's own Save. The extension never writes to EA's servers;
-   it only edits the preset list and answers the preset's asset requests locally.
+Pick any classic team on TeamCrafters (say, 2012 Alabama). Click a button. Then, in EA's Team
+Builder, that roster shows up in the presets list — pick it, and the whole roster is replaced with
+those real players: names, ratings, positions, class years, height/weight, and skin tones.
 
-## Scope
+Nothing is uploaded to EA until *you* press EA's own **Save**.
 
-This only targets **classic** rosters (NCAA14 and older). It intentionally does not run on the
-modern `teamcrafters.net/rosters/...` pages (CFB25/26/27).
+## What you need
 
-## Install (unpacked / developer mode)
+- **Google Chrome** (the only browser this has been tested in)
+- An EA account with access to **College Football 27 Team Builder**
+- No TeamCrafters account needed — the classic rosters are public
 
-1. Open `chrome://extensions`.
-2. Enable **Developer mode** (top right).
-3. Click **Load unpacked** and select this folder.
-4. Reload any already-open `teamcrafters.net` or `ea.com` tabs.
+## Install
+
+This isn't in the Chrome Web Store yet, so you load it manually. Takes about a minute.
+
+1. On this page, click the green **Code** button → **Download ZIP**.
+2. Unzip it. You'll get a folder named `teamcrafters-classic-roster-importer-main`.
+   Put it somewhere you won't delete by accident (not your Downloads folder).
+3. Open Chrome and go to `chrome://extensions`
+4. Turn on **Developer mode** (toggle, top-right).
+5. Click **Load unpacked** and select the folder you unzipped.
+6. The extension appears in your toolbar. (Click the puzzle-piece icon → pin it.)
+
+If `teamcrafters.net` or `ea.com` were already open, reload those tabs.
 
 ## Use it
 
-1. Go to a classic team page on teamcrafters.net and click **Copy roster for EA Team Builder**.
-2. Open EA College Football Team Builder, open the roster presets, and pick the
-   **"TeamCrafters: &lt;team&gt;"** entry (it takes Cupcake's spot). The roster loads.
-3. Review/edit in EA as normal, then use EA's own **Save**.
+1. Go to a classic team page on TeamCrafters, e.g.
+   `teamcrafters.net/app/classic-rosters/ncaa-13/alabama`
+2. Click the blue **"Copy roster for EA Team Builder"** button (bottom-right).
+3. Open your team in EA College Football 27 Team Builder.
+4. Open the **roster presets** list. Where "Cupcake" normally sits, you'll now see
+   **"TeamCrafters: Alabama (NCAA 13)"**. Pick it.
+5. The roster loads. Review it, then use EA's own **Save**.
 
-The toolbar popup shows what's currently copied (team, player count, when) and lets you clear it.
+Click the extension's toolbar icon any time to see what's currently copied, preview it on
+TeamCrafters, or clear it. Clearing it puts "Cupcake" back.
 
-## How it works internally
+## Troubleshooting
 
-- `roster-merge.js` + `teamcrafters-copy.js` (isolated world, teamcrafters.net only) — render the
-  copy button, call TeamCrafters' export API, merge the players onto the bundled base template
-  (`base-template/`), and store the finished `roster.json` + `character_visuals.json`.
-- `ea-bridge.js` (isolated world, ea.com only) — the only place with `chrome.storage` access on
-  the EA side; relays the stored payload into the page on request.
-- `inject.js` (**main world**, ea.com only) — patches `fetch`/`XMLHttpRequest` to (a) swap our
-  preset in for Cupcake in `template_rosters.json`, (b) answer our preset's two sentinel asset URLs
-  with the stored roster/visuals, and (c) while a roster is armed, serve an empty
-  `plyr-gen-names.json` so EA doesn't regenerate over our imported player names. It asks
-  `ea-bridge.js` for the payload via a `CustomEvent` round trip (main-world scripts can't call
-  `chrome.*` directly).
-- `base-template/` — a real EA preset (roster.json + character_visuals.json) used as the merge
-  base, so unfilled slots and all EA-owned fields (IDs, cosmetics, loadouts) stay valid.
-- `popup.html` / `popup.js` — the toolbar status popup.
+**The "Copy roster" button doesn't appear.**
+It only shows on a *classic* team page — the URL must look like
+`/app/classic-rosters/<game>/<team>`. It won't appear on the modern CFB 25/26/27 roster pages, or
+on a game's team-list page. If the URL looks right, reload the tab.
+
+**The preset doesn't show up in Team Builder.**
+Check the toolbar popup actually shows a copied roster, then reload the Team Builder tab — the
+presets list is fetched on page load, so it needs a refresh after you copy.
+
+**"Cupcake" is missing from my presets.**
+Expected while a roster is copied — the import takes Cupcake's slot. Clear the copied roster in
+the popup and Cupcake comes back.
+
+**The game crashed / the team won't load.**
+Please [open an issue](../../issues) with the team and game you imported. If you can export the
+broken team's JSON and attach it, that's the fastest way to diagnose.
+
+**Some players' class is blank, or names/skin tones look off.**
+Report it with the team name. Some classic-era source data is incomplete — see
+[Known limitations](#known-limitations).
+
+**Getting help:** [GitHub Issues](../../issues) for bugs and feature requests, or the
+TeamCrafters Discord for quick questions: **<!-- TODO: add Discord invite link -->**
+
+---
+
+# For developers
+
+## How it works
+
+Team Builder ships built-in roster presets ("Cupcake", "Spread", …). Each preset is just an entry
+in a JSON list pointing at two CDN files: a `roster.json` (player data) and a
+`character_visuals.json` (appearance). Selecting one makes EA's own loader replace the roster.
+
+This extension hijacks that mechanism rather than writing into the app's internal state (which is
+closure-bound and effectively unreachable in the production build). It:
+
+1. **At copy time** (teamcrafters.net) fetches the roster export, merges those players onto a
+   bundled real EA preset, and stores the finished `roster.json` + `character_visuals.json` in
+   `chrome.storage.local`.
+2. **On ea.com** intercepts three GET responses:
+   - `template_rosters.json` — the presets list. Replaces the **Cupcake** entry with ours,
+     **keeping Cupcake's real id (1238)**. This matters: EA copies the chosen preset's id into the
+     loaded roster's `templateId`, and a made-up id crashes the game. Our merged roster is built on
+     the Cupcake template, so 1238 is the correct id.
+   - Two **sentinel asset URLs** (carrying a `_teamcrafters.json` marker) that only exist in our
+     injected preset — answered locally with the stored roster/visuals, never hitting the network.
+   - `plyr-gen-names.json` — the name-generator pool. While a roster is copied we serve an empty
+     pool, because EA otherwise regenerates every player's name from their skin tone on load,
+     overwriting the real names.
+3. **EA's own loader** does the actual roster replacement.
+
+## Project layout
+
+| File | World | Runs on | Purpose |
+|---|---|---|---|
+| `teamcrafters-copy.js` | isolated | teamcrafters.net | Copy button, calls the export API, stores the merged result |
+| `roster-merge.js` | isolated | teamcrafters.net | All merge logic (loaded first; shares scope) |
+| `inject.js` | **main** | ea.com | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
+| `ea-bridge.js` | isolated | ea.com | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
+| `popup.html` / `popup.js` | — | — | Toolbar status popup |
+| `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
+| `reference/` | — | — | EA head catalog + sample team payload, reference only |
+
+## How the merge works
+
+The base template has 85 slots. Players are grouped by position on both sides, sorted best-first
+by overall rating, and paired within position. Leftover players are reassigned across positions
+into leftover slots (overwriting that slot's position). Any slot never filled is **deleted**, so
+the final roster matches your team's size.
+
+Only these are replaced — everything else stays exactly as the template, which keeps EA's asset
+references internally consistent (mismatched appearance/asset fields crash the game on load):
+
+- **Roster:** names, jersey number, height, weight, class year, handedness, dev trait, archetype,
+  position (on reassignment), all 54 ratings, and `PLYR_PORTRAIT`
+- **Visuals:** name/number/height/weight mirrors, plus `genericHeadName` + `skinTone`
+- **Never touched:** `PLYR_ID`, `PLYR_ORIGID`, `PLYR_ASSETNAME`, `genericHead`, `assetName`,
+  `bodyType`, `loadouts` (all equipment), `skinToneScale`, `containerId`
+
+Encodings worth knowing, all confirmed against real team files:
+
+- `PLYR_WEIGHT` is `actual pounds − 160`
+- `PLYR_SCHOOLYEAR` is `0..3` = Freshman/Sophomore/Junior/Senior (nothing else is valid)
+- `PLYR_POSITION` is `0..20` (QB, HB, FB, WR, TE, LT, LG, C, RG, RT, LE, RE, DT, LOLB, MLB, ROLB,
+  CB, FS, SS, K, P)
+- A visuals entry's `genericHeadName` recipe ends in its complexion digit, which **must** equal
+  that entry's `skinTone`
+
+## The roster export API
+
+Copying calls a TeamCrafters-hosted endpoint:
+
+```
+GET https://www.teamcrafters.net/api/extension/v1/classic-rosters/{gameSlug}/{teamSlug}
+```
+
+e.g. `/api/extension/v1/classic-rosters/ncaa-13/alabama`. It returns normalized roster JSON:
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "source": {
+    "kind": "classic",
+    "game": "NCAA13",
+    "teamSlug": "alabama",
+    "teamName": "Alabama Crimson Tide",
+    "sourceUrl": "https://www.teamcrafters.net/app/classic-rosters/ncaa-13/alabama"
+  },
+  "copiedAt": "2026-07-21T18:00:00.000Z",
+  "playerCount": 68,
+  "positionCounts": { "QB": 3, "HB": 5 },
+  "warnings": [{ "code": "unsupported-position", "message": "..." }],
+  "players": [
+    {
+      "sourcePlayerId": 5944,
+      "firstName": "Denard",
+      "lastName": "Robinson",
+      "jerseyNumber": 16,
+      "position": "QB",        // abbreviation
+      "positionCode": 0,       // EA position code 0-20
+      "classYear": "Senior",
+      "schoolYearCode": 3,     // EA wire value 0-3
+      "heightInches": 72,      // null if unknown
+      "weightLbs": 195,        // real pounds; merge subtracts 160 for the wire value
+      "isLefty": false,        // null if unknown -> merge leaves EA's value
+      "devTrait": null,        // 0-3 (Normal/Impact/Star/Elite), null if unknown
+      "archetypeId": 4,        // PLYR_PLAYERTYPE, null if unknown
+      "portraitId": "3163",    // PLYR_PORTRAIT, drives face/skin tone
+      "skinToneCode": 8,
+      "ratings": { "OVR": 93, "SPD": 96, "AWR": 84 }
+    }
+  ]
+}
+```
+
+Notes for anyone working against this:
+
+- `ratings` keys are modern rating abbreviations (`OVR`, `SPD`, `STR`, `AGI`, `ACC`, `AWR`, `THP`,
+  `SAC`/`MAC`/`DAC`, `TAK`, `PBK`/`RBK`, `KPW`/`KAC`, …). See `EA_WIRE_SUFFIX_BY_MODERN_KEY` in
+  `roster-merge.js` for the full 54-key table and each key's `PLYR_*` wire name.
+- **Any rating key may be absent.** Classic-era games didn't have every modern rating, and values
+  that would need an unverified conversion formula are omitted rather than guessed. The merge
+  leaves the template's value for anything missing.
+- Nullable fields (`heightInches`, `isLefty`, `devTrait`, `archetypeId`, `portraitId`) mean "not
+  known for this player" — the merge skips them rather than writing a default.
+
+## Developing
+
+No build step — plain JS loaded directly by Chrome.
+
+```bash
+# syntax check everything
+for f in *.js; do node --check "$f"; done
+```
+
+After editing, hit the reload icon on the extension's card in `chrome://extensions`, then reload
+any open teamcrafters.net / ea.com tabs. Editing files on disk does **not** auto-reload it.
+
+The merge logic is pure with no browser dependencies, so you can exercise it in Node against the
+bundled template:
+
+```js
+const fs = require('fs');
+global.window = {};
+eval(fs.readFileSync('roster-merge.js', 'utf8'));
+
+const roster  = JSON.parse(fs.readFileSync('base-template/roster.json', 'utf8'));
+const visuals = JSON.parse(fs.readFileSync('base-template/character_visuals.json', 'utf8'));
+const clipboard = { source: { teamName: 'Test' }, playerCount: 1, players: [ /* ... */ ] };
+
+const out = window.TCRosterMerge.buildPresetPayload(clipboard, roster, visuals);
+console.log(out.stats);
+```
+
+Debugging the EA side: open DevTools on the Team Builder tab, and make sure the console's
+log-level filter includes **Info** — otherwise `console.log` output is silently hidden.
+
+## Contributing
+
+Issues and pull requests welcome. Especially useful:
+
+- **Richer appearance mapping.** `reference/portrait-catalog.json` has 5,041 complexion-indexed
+  heads; the merge currently uses four (one per skin-tone bucket).
+- **More rating conversions.** Older-era games lack many modern ratings; converting them properly
+  needs verified per-position formulas, not guesses.
+- **Bug reports with a broken team file attached** — that's how most of the loader quirks here
+  were found.
+
+Please keep the "only replace names / bio / ratings / position / face" rule. Touching EA's asset
+fields across template players caused every crash during development.
 
 ## Known limitations
 
-- The base template is a fixed EA preset; players you don't have (beyond your roster's size, or
-  positions your team doesn't fill) remain as that template's filler.
-- Only ratings with a confirmed direct/one-to-one mapping are converted (see the TeamCrafters
-  repo's `docs/team-builder-extension/classic-rating-conversion.md` and
-  `ps2-core-rating-conversion.md`). Ratings requiring an unconfirmed regression formula are left
-  as the template's values rather than guessed.
-- Player appearance (portrait, head, loadouts) stays as the template's; only skin tone, name,
-  number, height, and weight are updated on the visuals side. `reference/portrait-catalog.json`
-  (5,041 complexion-indexed entries) is a starting point for richer appearance mapping later.
-- Archetype/potential/dev-trait follow the source data's actual coverage; see the TeamCrafters
-  repo's `lib/teamBuilderRoster/` for the exact rules.
+- The base template is a fixed EA preset. Positions your team doesn't fill get removed, so the
+  roster ends up smaller than 85.
+- Only ratings with a confirmed one-to-one mapping are converted. Anything needing an unverified
+  regression formula is left at the template's value rather than guessed.
+- Appearance is coarse: skin tone/face comes from a four-bucket portrait mapping, and
+  equipment/body type stay as the template's.
+- Archetype, dev trait, and potential depend on what the classic-era source data actually has;
+  where it's missing, the template's values remain.
+- Some classic games have sparser data than others, so results vary by era.
 
 ## License
 
