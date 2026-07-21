@@ -251,6 +251,10 @@ Issues and pull requests welcome. Especially useful:
 Please keep the "only replace names / bio / ratings / position / face" rule. Touching EA's asset
 fields across template players caused every crash during development.
 
+**Licensing of contributions:** by submitting a pull request, patch, or any other contribution to
+this project, you agree that your contribution is licensed under the same **GNU General Public
+License v3.0 or later** that covers this project.
+
 ## Known limitations
 
 - The base template is a fixed EA preset. Positions your team doesn't fill get removed, so the
