@@ -22,18 +22,18 @@
   },
   "permissions": ["storage"],
   "host_permissions": [
-    "https://www.ea.com/*",
-    "https://www.teamcrafters.net/*"
+    "https://www.ea.com/games/ea-sports-college-football/team-builder/*",
+    "https://www.teamcrafters.net/app/classic-rosters/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.ea.com/*"],
+      "matches": ["https://www.ea.com/games/ea-sports-college-football/team-builder/*"],
       "js": ["inject.js"],
       "world": "MAIN",
       "run_at": "document_start"
     },
     {
-      "matches": ["https://www.ea.com/*"],
+      "matches": ["https://www.ea.com/games/ea-sports-college-football/team-builder/*"],
       "js": ["ea-bridge.js"],
       "world": "ISOLATED",
       "run_at": "document_start"

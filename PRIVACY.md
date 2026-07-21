@@ -3,14 +3,23 @@
 This extension is built by TeamCrafters. It does not collect, transmit, or sell any data to
 anyone.
 
+## Where it runs
+
+It only loads on two specific places — nowhere else on the web:
+
+- `https://www.teamcrafters.net/app/classic-rosters/*` (classic roster pages)
+- `https://www.ea.com/games/ea-sports-college-football/team-builder/*` (EA Team Builder)
+
 ## What it accesses
 
-- **teamcrafters.net**: reads the roster export for whatever classic team page you're currently
-  on, using a normal same-origin request in your own browser session. No TeamCrafters login,
-  cookies, or credentials are read or transmitted by the extension itself.
-- **www.ea.com**: reads and can modify the body of the one specific upload request EA's Team
-  Builder Save action makes, immediately before it's sent. No other requests, page content,
-  cookies, or EA credentials are read or transmitted.
+- **TeamCrafters classic-roster pages**: when you click "Copy roster", it requests that team's
+  roster export with a normal same-origin request in your own browser session. No TeamCrafters
+  login, cookies, or credentials are read or transmitted by the extension.
+- **EA Team Builder**: it watches the page's own network calls and responds to exactly three of
+  them — the roster-presets list (to add the copied roster as a preset), the two asset URLs
+  belonging to that injected preset (answered locally from your copied roster), and the
+  name-generator pool (emptied while a roster is copied, so imported names aren't overwritten).
+  It does not read or modify any other request, page content, cookie, or EA credential.
 
 ## What it stores
 
@@ -21,8 +30,9 @@ anyone.
 ## What it does NOT do
 
 - No analytics, telemetry, or crash reporting.
-- No network requests to any server other than teamcrafters.net (to fetch the export you asked
-  for) and whatever EA's own Save action already contacts.
+- No network requests to any server other than teamcrafters.net, to fetch the export you asked
+  for. The injected preset's asset URLs are answered locally and never leave your machine.
+- It never uploads anything to EA, and never modifies what EA saves. Loading a preset only
+  changes the roster in the editor; persisting it is entirely EA's own **Save** button, which
+  you press yourself.
 - No reading of other tabs, browsing history, passwords, or autofill data.
-- No automatic Save/Publish — every upload still requires you to explicitly choose to send the
-  modified payload in the on-page dialog, and to press EA's own Save button.

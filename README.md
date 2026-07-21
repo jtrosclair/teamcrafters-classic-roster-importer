@@ -40,7 +40,7 @@ This isn't in the Chrome Web Store yet, so you load it manually. Takes about a m
 5. Click **Load unpacked** and select the folder you unzipped.
 6. The extension appears in your toolbar. (Click the puzzle-piece icon → pin it.)
 
-If `teamcrafters.net` or `ea.com` were already open, reload those tabs.
+If a TeamCrafters classic-roster page or EA Team Builder was already open, reload those tabs.
 
 ## Use it
 
@@ -79,7 +79,7 @@ Report it with the team name. Some classic-era source data is incomplete — see
 [Known limitations](#known-limitations).
 
 **Getting help:** [GitHub Issues](../../issues) for bugs and feature requests, or the
-TeamCrafters Discord for quick questions: **<!-- TODO: add Discord invite link -->**
+TeamCrafters Discord for quick questions: **https://discord.gg/FkW8Uaj7DH**
 
 ---
 
@@ -97,7 +97,7 @@ closure-bound and effectively unreachable in the production build). It:
 1. **At copy time** (teamcrafters.net) fetches the roster export, merges those players onto a
    bundled real EA preset, and stores the finished `roster.json` + `character_visuals.json` in
    `chrome.storage.local`.
-2. **On ea.com** intercepts three GET responses:
+2. **On the Team Builder page** intercepts three GET responses:
    - `template_rosters.json` — the presets list. Replaces the **Cupcake** entry with ours,
      **keeping Cupcake's real id (1238)**. This matters: EA copies the chosen preset's id into the
      loaded roster's `templateId`, and a made-up id crashes the game. Our merged roster is built on
@@ -113,10 +113,10 @@ closure-bound and effectively unreachable in the production build). It:
 
 | File | World | Runs on | Purpose |
 |---|---|---|---|
-| `teamcrafters-copy.js` | isolated | teamcrafters.net | Copy button, calls the export API, stores the merged result |
-| `roster-merge.js` | isolated | teamcrafters.net | All merge logic (loaded first; shares scope) |
-| `inject.js` | **main** | ea.com | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
-| `ea-bridge.js` | isolated | ea.com | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
+| `teamcrafters-copy.js` | isolated | classic-roster pages | Copy button, calls the export API, stores the merged result |
+| `roster-merge.js` | isolated | classic-roster pages | All merge logic (loaded first; shares scope) |
+| `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
+| `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
 | `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
 | `reference/` | — | — | EA head catalog + sample team payload, reference only |
@@ -214,7 +214,7 @@ for f in *.js; do node --check "$f"; done
 ```
 
 After editing, hit the reload icon on the extension's card in `chrome://extensions`, then reload
-any open teamcrafters.net / ea.com tabs. Editing files on disk does **not** auto-reload it.
+any open TeamCrafters / Team Builder tabs. Editing files on disk does **not** auto-reload it.
 
 The merge logic is pure with no browser dependencies, so you can exercise it in Node against the
 bundled template:
