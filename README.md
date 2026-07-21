@@ -69,7 +69,9 @@ You don't have to start from a TeamCrafters team — you can bring your own rost
 4. Back on that page, give the roster a name, pick your file, and hit **Import roster**.
 5. It shows up in Team Builder's presets exactly like a copied TeamCrafters roster.
 
-Only `firstName`, `lastName`, and `position` are required. Leave any other cell blank and that value stays as the base template's. The import page has a full column reference with accepted values, and it'll tell you exactly which row and column to fix if something's off.
+Every rating must be a number from 0–99, and **`OVR` can be left blank** — it gets calculated on import. Bio fields (height, weight, class, skin tone) can be left blank too; those fall back to the base template's values.
+
+Your roster also has to be able to field a team, so the import requires **50–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 3 TE, 2 each on the O-line, 2 LE/RE, 3 DT, 2 LOLB/ROLB, 3 MLB, 5 CB, 3 FS, 2 SS, 2 K, 1 P — FB optional). Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
 
 ## Troubleshooting
 

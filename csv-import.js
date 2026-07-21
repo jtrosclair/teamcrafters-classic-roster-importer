@@ -13,8 +13,9 @@
 // (see roster-merge.js). Exposes window.TCCsvImport.
 //
 // The shipped sample-roster.csv is generated from the bundled base template, so every column
-// here is guaranteed to round-trip. Only firstName/lastName/position are required; anything
-// else left blank falls back to whatever the base template's player had.
+// here is guaranteed to round-trip. Ratings are validated strictly (present and 0-99, OVR
+// excepted), as is roster composition (50-85 players, per-position minimums). Bio fields left
+// blank fall back to whatever the base template's player had.
 (function () {
   const POSITION_ABBREV_TO_EA_CODE = {
     QB: 0, HB: 1, FB: 2, WR: 3, TE: 4, LT: 5, LG: 6, C: 7, RG: 8, RT: 9, LE: 10, RE: 11,
@@ -46,6 +47,29 @@
     'TAK','POW','PMV','FMV','BSH','PUR','PRC','MCV','ZCV','PRS','PBK','PBP','PBF','RBK','RBP',
     'RPF','LBK','IBL','KPW','KAC','RET','STA','INJ','TGH','LSP',
   ];
+
+  // OVR is derived, not authored — leave it blank in the CSV and it gets calculated on import.
+  // Every other rating must be present and 0-99.
+  const REQUIRED_RATINGS = RATING_KEYS.filter((k) => k !== 'OVR');
+
+  // A roster has to be able to field a team. These are EA's practical minimums per position;
+  // they sum to exactly the 50-player floor.
+  const MIN_PLAYERS = 50;
+  const MAX_PLAYERS = 85;
+  const POSITION_MINIMUMS = {
+    QB: 2, HB: 3, FB: 0, WR: 5, TE: 3, LT: 2, LG: 2, C: 2, RG: 2, RT: 2, LE: 2, RE: 2,
+    DT: 3, LOLB: 2, ROLB: 2, MLB: 3, CB: 5, FS: 3, SS: 2, K: 2, P: 1,
+  };
+
+  // Don't build a wall of thousands of messages for a badly-formed file.
+  const MAX_COLLECTED_ERRORS = 100;
+
+  // Overall rating from the individual ratings. Not yet implemented — the real formula is
+  // position/archetype weighted. Until it lands, a blank OVR simply keeps the base template's
+  // value for that slot and the importer says so.
+  function computeOverall(/* player */) {
+    return null;
+  }
 
   // --- CSV parsing -----------------------------------------------------------------------
   // Handles quoted fields, embedded commas/newlines, escaped quotes, CRLF, and Excel's BOM.
@@ -129,6 +153,10 @@
         errors.push(`Missing required column "${required}". Start from the sample CSV to get the right headers.`);
       }
     }
+    const missingRatingCols = REQUIRED_RATINGS.filter((k) => !headers.includes(k));
+    if (missingRatingCols.length) {
+      errors.push(`Missing ${missingRatingCols.length} rating column(s): ${missingRatingCols.join(', ')}.`);
+    }
     if (errors.length) return { errors, warnings, clipboard: null };
 
     const players = [];
@@ -145,10 +173,31 @@
       }
 
       const ratings = {};
-      for (const key of RATING_KEYS) {
-        if (!(key in r)) continue;
-        const val = clampRating(r[key]);
-        if (val != null) ratings[key] = val;
+      for (const key of REQUIRED_RATINGS) {
+        const raw = r[key];
+        if (raw === '' || raw == null) {
+          if (errors.length < MAX_COLLECTED_ERRORS) {
+            errors.push(`Row ${line} (${first} ${last}): ${key} is blank — every rating except OVR is required.`);
+          }
+          continue;
+        }
+        const n = num(raw);
+        if (n == null || n < 0 || n > 99) {
+          if (errors.length < MAX_COLLECTED_ERRORS) {
+            errors.push(`Row ${line} (${first} ${last}): ${key} is "${raw}" — must be a number from 0 to 99.`);
+          }
+          continue;
+        }
+        ratings[key] = Math.round(n);
+      }
+      // OVR is optional: blank means "calculate it".
+      if (r.OVR !== '' && r.OVR != null) {
+        const ovr = num(r.OVR);
+        if (ovr == null || ovr < 0 || ovr > 99) {
+          if (errors.length < MAX_COLLECTED_ERRORS) {
+            errors.push(`Row ${line} (${first} ${last}): OVR is "${r.OVR}" — must be a number from 0 to 99, or blank to calculate it.`);
+          }
+        } else ratings.OVR = Math.round(ovr);
       }
 
       const classRaw = String(r.classYear ?? '').trim().toUpperCase();
@@ -191,8 +240,42 @@
       });
     });
 
-    if (errors.length) return { errors, warnings, clipboard: null };
+    if (errors.length) {
+      if (errors.length >= MAX_COLLECTED_ERRORS) {
+        errors.push(`(stopped after ${MAX_COLLECTED_ERRORS} problems — fix these and re-upload)`);
+      }
+      return { errors, warnings, clipboard: null };
+    }
     if (!players.length) return { errors: ['No player rows found in that file.'], warnings, clipboard: null };
+
+    // --- roster composition ---
+    if (players.length < MIN_PLAYERS) {
+      errors.push(`Only ${players.length} players — a roster needs at least ${MIN_PLAYERS}.`);
+    }
+    if (players.length > MAX_PLAYERS) {
+      errors.push(`${players.length} players — a roster can hold at most ${MAX_PLAYERS}.`);
+    }
+    const counts = {};
+    for (const p of players) counts[p.position] = (counts[p.position] || 0) + 1;
+    const short = Object.entries(POSITION_MINIMUMS)
+      .filter(([pos, min]) => min > 0 && (counts[pos] || 0) < min)
+      .map(([pos, min]) => `${pos}: has ${counts[pos] || 0}, needs ${min}`);
+    if (short.length) {
+      errors.push(`Not enough players at ${short.length} position(s) — ${short.join('; ')}.`);
+    }
+    if (errors.length) return { errors, warnings, clipboard: null };
+
+    // --- derive OVR where the CSV left it blank ---
+    let uncalculated = 0;
+    for (const p of players) {
+      if (p.ratings.OVR != null) continue;
+      const ovr = computeOverall(p);
+      if (ovr != null) p.ratings.OVR = ovr;
+      else uncalculated++;
+    }
+    if (uncalculated) {
+      warnings.push(`${uncalculated} player(s) had no OVR. Automatic OVR calculation isn't wired up yet, so those keep the base template's overall rating — set OVR in the CSV to control it.`);
+    }
 
     // roster-merge.js pairs players to slots in the order given, best-first within each
     // position — so sort here rather than trusting the spreadsheet's row order.

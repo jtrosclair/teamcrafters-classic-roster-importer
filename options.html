@@ -71,8 +71,9 @@
     <div class="card">
       <h2>2. Upload your edited CSV</h2>
       <p class="sub">
-        Only <code>firstName</code>, <code>lastName</code> and <code>position</code> are required.
-        Leave any other cell blank and that value stays as the base template's.
+        Every rating must be filled in with a number from 0&ndash;99. <b>Leave <code>OVR</code> blank
+        and it gets calculated for you.</b> Bio fields (height, weight, class, skin tone&hellip;) can be
+        left blank &mdash; those fall back to the base template's values.
       </p>
       <input type="text" id="teamName" placeholder="Roster name (shows in the Team Builder presets list)">
       <input type="file" id="csvFile" accept=".csv,text/csv">
@@ -81,6 +82,30 @@
         <span class="muted" id="fileHint">No file chosen</span>
       </div>
       <div id="result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Roster requirements</h2>
+      <p class="sub">Your roster has to be able to field a team, so the import checks:</p>
+      <ul>
+        <li><b>50&ndash;85 players</b> total</li>
+        <li><b>Every rating 0&ndash;99</b>, no blanks (except <code>OVR</code>)</li>
+        <li><b>Minimum at each position:</b></li>
+      </ul>
+      <table>
+        <tr><th>Pos</th><th>Min</th><th>Pos</th><th>Min</th><th>Pos</th><th>Min</th></tr>
+        <tr><td>QB</td><td>2</td><td>LT</td><td>2</td><td>LOLB</td><td>2</td></tr>
+        <tr><td>HB</td><td>3</td><td>LG</td><td>2</td><td>MLB</td><td>3</td></tr>
+        <tr><td>FB</td><td>0</td><td>C</td><td>2</td><td>ROLB</td><td>2</td></tr>
+        <tr><td>WR</td><td>5</td><td>RG</td><td>2</td><td>CB</td><td>5</td></tr>
+        <tr><td>TE</td><td>3</td><td>RT</td><td>2</td><td>FS</td><td>3</td></tr>
+        <tr><td>LE</td><td>2</td><td>DT</td><td>3</td><td>SS</td><td>2</td></tr>
+        <tr><td>RE</td><td>2</td><td>K</td><td>2</td><td>P</td><td>1</td></tr>
+      </table>
+      <p class="muted">
+        If anything's off, the importer tells you the exact row and column &mdash; nothing is
+        imported until it all passes.
+      </p>
     </div>
 
     <div class="card">
@@ -98,7 +123,8 @@
           <tr><td><code>isLefty</code></td><td>TRUE / FALSE</td></tr>
           <tr><td><code>skinTone</code></td><td>0–7 &nbsp; (0–1 light, 7 medium-light, 2 medium, 3 medium-dark, 4–6 dark)</td></tr>
           <tr><td><code>devTrait</code></td><td>0 Normal, 1 Impact, 2 Star, 3 Elite</td></tr>
-          <tr><td>Ratings</td><td>0–99 each: OVR, SPD, STR, AGI, ACC, AWR, BTK, TRK, COD, BCV, SFA, SPM, JKM, CAR, CTH, SRR, MRR, DRR, CIT, SPC, RLS, JMP, THP, SAC, MAC, DAC, RUN, TUP, BSK, PAC, TAK, POW, PMV, FMV, BSH, PUR, PRC, MCV, ZCV, PRS, PBK, PBP, PBF, RBK, RBP, RPF, LBK, IBL, KPW, KAC, RET, STA, INJ, TGH, LSP</td></tr>
+          <tr><td><code>OVR</code></td><td>Leave blank to calculate, or set 0–99 yourself</td></tr>
+          <tr><td>Ratings</td><td><b>All required</b>, 0–99 each: SPD, STR, AGI, ACC, AWR, BTK, TRK, COD, BCV, SFA, SPM, JKM, CAR, CTH, SRR, MRR, DRR, CIT, SPC, RLS, JMP, THP, SAC, MAC, DAC, RUN, TUP, BSK, PAC, TAK, POW, PMV, FMV, BSH, PUR, PRC, MCV, ZCV, PRS, PBK, PBP, PBF, RBK, RBP, RPF, LBK, IBL, KPW, KAC, RET, STA, INJ, TGH, LSP</td></tr>
         </table>
         <p class="muted">
           Players are matched to roster slots by position, best overall rating first. If you have
