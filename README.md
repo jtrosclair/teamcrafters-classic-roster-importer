@@ -71,7 +71,7 @@ You don't have to start from a TeamCrafters team — you can bring your own rost
 
 Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone) can be left blank too; those fall back to the base template's values.
 
-Your roster also has to be able to field a team, so the import requires **50–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 2 TE, 1 each on the O-line, 2 LE/RE, 3 DT, 2 MLB, 2 CB, 2 FS, 2 SS, 1 K, 1 P — FB optional). Two units also have a combined minimum on top of that: **8 offensive linemen** across LT/LG/C/RG/RT and **3 outside linebackers** across LOLB/ROLB. How you distribute those is up to you, as long as no single spot is empty. Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
+Your roster also has to be able to field a team, so the import requires **45–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 2 TE, 1 each on the O-line, 2 LE/RE, 3 DT, 2 MLB, 2 CB, 2 FS, 2 SS, 1 K, 1 P — FB optional). Two units also have a combined minimum on top of that: **8 offensive linemen** across LT/LG/C/RG/RT and **3 outside linebackers** across LOLB/ROLB. How you distribute those is up to you, as long as no single spot is empty. Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
 
 ## Or start from a real team and edit it
 
@@ -84,7 +84,7 @@ It's a faithful dump — nothing is padded or guessed:
 - **Blank ratings are possible.** Older games didn't track every rating CFB 27 has, and those cells
   come out empty rather than filled with a made-up number. The importer requires them, so fill them
   in.
-- **Short rosters stay short.** You get exactly the players the team has. If that's under 50, or
+- **Short rosters stay short.** You get exactly the players the team has. If that's under 45, or
   under a position minimum (plenty of real teams carry one kicker), the CSV won't import until you
   add players.
 

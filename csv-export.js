@@ -13,7 +13,7 @@
 // spreadsheet, and brought back in. Exposes window.TCCsvExport.
 //
 // This is a faithful dump, not a repair job. Nothing is invented: ratings the classic game never
-// tracked stay blank, and a roster short of the importer's 50-player floor or a position minimum
+// tracked stay blank, and a roster short of the importer's 45-player floor or a position minimum
 // is exported short. buildRosterCsv returns a summary naming anything that would block a
 // re-import, for the caller to show the user — the file itself is always produced.
 (function () {

@@ -14,7 +14,7 @@
 //
 // The shipped sample-roster.csv is generated from the bundled base template, so every column
 // here is guaranteed to round-trip. Ratings are validated strictly (present and 0-99, OVR
-// excepted), as is roster composition (50-85 players, per-position minimums). Bio fields left
+// excepted), as is roster composition (45-85 players, per-position minimums). Bio fields left
 // blank fall back to whatever the base template's player had.
 (function () {
   const POSITION_ABBREV_TO_EA_CODE = {
@@ -53,7 +53,7 @@
 
   // A roster has to be able to field a team. These are EA's practical minimums per position; only
   // one kicker is required, since real teams routinely carry exactly one.
-  const MIN_PLAYERS = 50;
+  const MIN_PLAYERS = 45;
   const MAX_PLAYERS = 85;
   const POSITION_MINIMUMS = {
     QB: 2, HB: 3, FB: 0, WR: 5, TE: 2, LT: 1, LG: 1, C: 1, RG: 1, RT: 1, LE: 2, RE: 2,
@@ -66,7 +66,7 @@
   //
   // Labels are spelled out rather than shortened to "OL"/"OLB" on purpose — those aren't accepted
   // position values, so naming them in an error would send people to write a column the importer
-  // rejects. Together with the per-position minimums this comes to 40, under the 50-player floor,
+  // rejects. Together with the per-position minimums this comes to 40, under the 45-player floor,
   // so a lean roster hits the floor before it hits the position table.
   const POSITION_GROUP_MINIMUMS = [
     { label: 'LT+LG+C+RG+RT', positions: ['LT', 'LG', 'C', 'RG', 'RT'], min: 8 },
