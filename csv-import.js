@@ -57,12 +57,13 @@
   const MAX_PLAYERS = 85;
   const POSITION_MINIMUMS = {
     QB: 2, HB: 3, FB: 0, WR: 5, TE: 2, LT: 2, LG: 2, C: 2, RG: 2, RT: 2, LE: 2, RE: 2,
-    DT: 3, LOLB: 1, ROLB: 1, MLB: 3, CB: 5, FS: 2, SS: 2, K: 1, P: 1,
+    DT: 3, LOLB: 1, ROLB: 1, MLB: 2, CB: 2, FS: 2, SS: 2, K: 1, P: 1,
   };
 
   // Some requirements span a pair of positions. A defense needs three outside linebackers, but how
   // they split across the two sides is the roster's business — the per-side minimums above only
-  // insist that neither side is empty. Together these come to 46 players, under the 50 floor.
+  // insist that neither side is empty. Together these come to 38 players, well under the 50 floor,
+  // so a lean roster hits the floor before it hits the position table.
   const POSITION_GROUP_MINIMUMS = [
     { label: 'LOLB+ROLB', positions: ['LOLB', 'ROLB'], min: 3 },
   ];
