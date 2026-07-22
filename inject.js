@@ -55,24 +55,27 @@
       loadoutType: 6,
       loadoutCategory: 1,
       loadoutElements: [
+        // School-specific assets resolve under plain "content/..."; only the generic shared items
+        // (the shoes below) carry the "ContentShared/" root — matching how EA's own saved payload
+        // splits them.
         {
           slotType: 93,
-          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Helmet/U_LSU_HELMET_2021_GOLD',
+          itemAssetName: 'content/FootballCharacter/Items/Uniform/Helmet/U_LSU_HELMET_2021_GOLD',
           itemDisplayName: 'HOME HELMET',
         },
         {
           slotType: 98,
-          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Jersey/U_ORE_JERSEY_2023_WHITE',
+          itemAssetName: 'content/FootballCharacter/Items/Uniform/Jersey/U_ORE_JERSEY_2023_WHITE',
           itemDisplayName: 'HOME JERSEY',
         },
         {
           slotType: 97,
-          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Pants/U_ORST_PANTS_2024_GRAY',
+          itemAssetName: 'content/FootballCharacter/Items/Uniform/Pants/U_ORST_PANTS_2024_GRAY',
           itemDisplayName: 'HOME PANTS',
         },
         {
           slotType: 94,
-          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Socks/U_ORST_SOCKS_2023_WHITE',
+          itemAssetName: 'content/FootballCharacter/Items/Uniform/Socks/U_ORST_SOCKS_2023_WHITE',
           itemDisplayName: 'HOME SOCKS',
         },
         {
