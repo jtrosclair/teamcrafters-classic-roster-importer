@@ -128,12 +128,46 @@
     return text;
   }
 
+  // Every real characterUniformItems entry carries this, across all four slot types.
+  const SECONDARY_SLOT = 254;
+
+  // In EA's own payload, slots 93/94/97/98 are always reached through a characterUniformItems
+  // entry that binds the name to a team-authored part in uniformParts, while the shoes (95/96)
+  // are referenced directly and have no entry at all — there is no shoes category in uniformParts
+  // to bind to. Our replacements are prebuilt school assets, so they have no authorable part
+  // either; we register them anyway, in case the loader resolves those slots by lookup and simply
+  // fails on a name it can't find.
+  //
+  // partItem is left empty because there is genuinely nothing to point at — matching displayName,
+  // which EA also leaves as "". If the save fails, this is the first thing to suspect: the shoes
+  // prove a direct reference needs no entry, so dropping registerUniformItems entirely is the
+  // other half of the experiment.
+  function registerUniformItems(frostbiteData, uniform) {
+    const items = frostbiteData.characterUniformItems;
+    if (!items || typeof items !== 'object') return [];
+    const added = [];
+    for (const el of uniform.uniform.loadoutElements) {
+      // Shared assets already work as direct references — don't touch what's proven.
+      if (String(el.itemAssetName).startsWith('ContentShared/')) continue;
+      if (items[el.itemAssetName]) continue;
+      items[el.itemAssetName] = {
+        assetName: el.itemAssetName,
+        displayName: '',
+        primarySlot: el.slotType,
+        secondarySlot: SECONDARY_SLOT,
+        partItem: '',
+      };
+      added.push(el.itemAssetName);
+    }
+    return added;
+  }
+
   // Swap TEST_UNIFORM into uniforms[0]. Returns what was replaced so the modal can name it.
   // Throws with a readable message if the payload isn't shaped the way we expect, so a shifting
   // EA schema surfaces as "couldn't apply" rather than a silently corrupted upload.
   function applyUniform(payload) {
-    const visuals = payload && payload.teamData && payload.teamData.frostbiteData
-      && payload.teamData.frostbiteData.teamVisuals;
+    const frostbiteData = payload && payload.teamData && payload.teamData.frostbiteData;
+    const visuals = frostbiteData && frostbiteData.teamVisuals;
     if (!visuals) {
       throw new Error('Could not find teamData.frostbiteData.teamVisuals in this save.');
     }
@@ -141,10 +175,16 @@
       throw new Error('This team has no uniforms array to replace.');
     }
     const previous = visuals.uniforms[0];
-    visuals.uniforms[0] = structuredClone(TEST_UNIFORM);
+    const replacement = structuredClone(TEST_UNIFORM);
+    visuals.uniforms[0] = replacement;
+    // The team's own HOME entries stay in characterUniformItems even though uniforms[0] no longer
+    // points at them. Leaving them is the conservative choice — they're inert, and the AWAY ones
+    // are still live for uniforms[1].
+    const registered = registerUniformItems(frostbiteData, replacement);
     return {
       previousName: (previous && previous.displayName) || 'uniform 1',
       uniformCount: visuals.uniforms.length,
+      registered,
     };
   }
 
@@ -197,8 +237,9 @@
       } else {
         detail.textContent =
           `This replaces your first uniform ("${info.previousName}") with the test uniform ` +
-          `"${TEST_UNIFORM.displayName}". Your other ${info.uniformCount - 1} uniform(s), roster, ` +
-          `logos, and stadium are untouched.`;
+          `"${TEST_UNIFORM.displayName}", and registers ${info.registered.length} new uniform ` +
+          `item(s). Your other ${info.uniformCount - 1} uniform(s), roster, logos, and stadium ` +
+          `are untouched.`;
       }
 
       const countdownEl = document.createElement('div');
