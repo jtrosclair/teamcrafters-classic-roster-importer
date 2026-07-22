@@ -50,7 +50,7 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 
 1. Go to a classic team page on TeamCrafters, find them at.
    `teamcrafters.net/app/classic-rosters`
-2. Click the blue **"Copy roster for EA Team Builder"** button (bottom-right).
+2. Click the blue **"Copy team as-is"** button (bottom-right).
 3. Open your team in EA College Football 27 Team Builder. Go to the "Roster" tab.
 4. On the **roster presets** dropdown, in the middle, you'll now see something like
    **"TeamCrafters: Alabama (NCAA 13)"**. Pick it.
@@ -73,9 +73,26 @@ Every rating must be a number from 0–99. **`OVR` and archetype are always calc
 
 Your roster also has to be able to field a team, so the import requires **50–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 3 TE, 2 each on the O-line, 2 LE/RE, 3 DT, 2 LOLB/ROLB, 3 MLB, 5 CB, 3 FS, 2 SS, 2 K, 1 P — FB optional). Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
 
+## Or start from a real team and edit it
+
+The classic team page also has a **"Download CSV"** button next to "Copy team as-is". It hands you
+that team as a spreadsheet in the same format the importer above accepts, so you can change a
+rating, swap a player, or reorder the depth chart and bring it back in.
+
+It's a faithful dump — nothing is padded or guessed:
+
+- **Blank ratings are possible.** Older games didn't track every rating CFB 27 has, and those cells
+  come out empty rather than filled with a made-up number. The importer requires them, so fill them
+  in.
+- **Short rosters stay short.** You get exactly the players the team has. If that's under 50, or
+  under a position minimum (plenty of real teams carry one kicker), the CSV won't import until you
+  add players.
+
+Either way the file always downloads, and the button tells you exactly what to fix first.
+
 ## Troubleshooting
 
-**The "Copy roster" button doesn't appear.**
+**The "Copy team as-is" button doesn't appear.**
 It only shows on a *classic* team page — the URL must look like
 `/app/classic-rosters/<game>/<team>`. It won't appear on the modern CFB 25/26/27 roster pages, or
 on a game's team-list page. If the URL looks right, reload the tab.
@@ -131,13 +148,15 @@ closure-bound and effectively unreachable in the production build). It:
 
 | File | World | Runs on | Purpose |
 |---|---|---|---|
-| `teamcrafters-copy.js` | isolated | classic-roster pages | Copy button, calls the export API, stores the merged result |
+| `teamcrafters-copy.js` | isolated | classic-roster pages | The two buttons; calls the export API, stores the merged result or writes the CSV |
 | `roster-merge.js` | isolated | classic-roster pages | All merge logic (loaded first; shares scope) |
 | `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
 | `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
 | `options.html` / `options.js` | — | — | CSV import page (file picker, validation, sample download) |
-| `csv-import.js` | — | — | CSV parsing + mapping into the normalized roster shape |
+| `csv-import.js` | isolated | classic-roster pages | CSV parsing + mapping into the normalized roster shape; owns the column schema and roster rules |
+| `csv-export.js` | isolated | classic-roster pages | The reverse — normalized roster to CSV, reusing `csv-import.js`'s tables so the two can't drift |
+| `cfb27-position-ovr-calculator.js` | — | — | Archetype-weighted OVR calculation (options page only) |
 | `sample-roster.csv` | — | — | Complete 85-player sample, generated from the base template |
 | `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
 | `reference/` | — | — | EA head catalog + sample team payload, reference only |
@@ -175,6 +194,8 @@ There are two sources for a roster, and they converge immediately:
 - `csv-import.js` parses a user-supplied CSV on the options page.
 
 Both produce the **same normalized shape** (documented below), which is handed to `roster-merge.js`. Everything after that point — position matching, merge rules, wire encodings, storage, and serving — is identical. If you add a third source, produce that shape and you're done.
+
+`csv-export.js` runs that shape back out to CSV, closing the loop: a roster fetched from the API can be written to a spreadsheet and re-enter through `csv-import.js`. It derives its column list and roster rules from `csv-import.js`'s exports rather than restating them, so the two halves can't disagree about the format. The export writes the clipboard **directly**, never the merged result — that's what keeps a rating the classic game lacked visible as a blank cell instead of silently inheriting the base template's value.
 
 ## The roster export API
 

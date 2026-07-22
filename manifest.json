@@ -54,6 +54,8 @@
       ],
       "js": [
         "roster-merge.js",
+        "csv-import.js",
+        "csv-export.js",
         "teamcrafters-copy.js"
       ],
       "world": "ISOLATED",

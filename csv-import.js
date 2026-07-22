@@ -302,5 +302,17 @@
     };
   }
 
-  window.TCCsvImport = { parseCsv, buildClipboardFromCsv, RATING_KEYS };
+  // The lookup tables and roster rules are shared with csv-export.js so a downloaded CSV always
+  // speaks the exact dialect this importer accepts.
+  window.TCCsvImport = {
+    parseCsv,
+    buildClipboardFromCsv,
+    RATING_KEYS,
+    POSITION_ABBREV_TO_EA_CODE,
+    CLASS_YEAR_TO_CODE,
+    PORTRAIT_ID_BY_SKIN_TONE,
+    POSITION_MINIMUMS,
+    MIN_PLAYERS,
+    MAX_PLAYERS,
+  };
 })();
