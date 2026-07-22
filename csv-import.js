@@ -51,15 +51,37 @@
   // its own value is rejected. Every other rating must be present and 0-99.
   const REQUIRED_RATINGS = RATING_KEYS.filter((k) => k !== 'OVR');
 
-  // A roster has to be able to field a team. These are EA's practical minimums per position; they
-  // sum to 48, under the 50-player floor, so meeting every position still leaves spots free.
-  // Only one kicker is required — real teams routinely carry exactly one.
+  // A roster has to be able to field a team. These are EA's practical minimums per position; only
+  // one kicker is required, since real teams routinely carry exactly one.
   const MIN_PLAYERS = 50;
   const MAX_PLAYERS = 85;
   const POSITION_MINIMUMS = {
-    QB: 2, HB: 3, FB: 0, WR: 5, TE: 3, LT: 2, LG: 2, C: 2, RG: 2, RT: 2, LE: 2, RE: 2,
-    DT: 3, LOLB: 2, ROLB: 2, MLB: 3, CB: 5, FS: 2, SS: 2, K: 1, P: 1,
+    QB: 2, HB: 3, FB: 0, WR: 5, TE: 2, LT: 2, LG: 2, C: 2, RG: 2, RT: 2, LE: 2, RE: 2,
+    DT: 3, LOLB: 1, ROLB: 1, MLB: 3, CB: 5, FS: 2, SS: 2, K: 1, P: 1,
   };
+
+  // Some requirements span a pair of positions. A defense needs three outside linebackers, but how
+  // they split across the two sides is the roster's business — the per-side minimums above only
+  // insist that neither side is empty. Together these come to 46 players, under the 50 floor.
+  const POSITION_GROUP_MINIMUMS = [
+    { label: 'LOLB+ROLB', positions: ['LOLB', 'ROLB'], min: 3 },
+  ];
+
+  // Every position and group falling short, as { position, has, needs }. Shared with csv-export.js
+  // so a downloaded CSV's warnings say exactly what this importer would reject.
+  function findRosterShortfalls(counts) {
+    const short = [];
+    for (const [pos, min] of Object.entries(POSITION_MINIMUMS)) {
+      if (min > 0 && (counts[pos] || 0) < min) {
+        short.push({ position: pos, has: counts[pos] || 0, needs: min });
+      }
+    }
+    for (const group of POSITION_GROUP_MINIMUMS) {
+      const has = group.positions.reduce((n, pos) => n + (counts[pos] || 0), 0);
+      if (has < group.min) short.push({ position: group.label, has, needs: group.min });
+    }
+    return short;
+  }
 
   // Don't build a wall of thousands of messages for a badly-formed file.
   const MAX_COLLECTED_ERRORS = 100;
@@ -257,11 +279,10 @@
     }
     const counts = {};
     for (const p of players) counts[p.position] = (counts[p.position] || 0) + 1;
-    const short = Object.entries(POSITION_MINIMUMS)
-      .filter(([pos, min]) => min > 0 && (counts[pos] || 0) < min)
-      .map(([pos, min]) => `${pos}: has ${counts[pos] || 0}, needs ${min}`);
+    const short = findRosterShortfalls(counts);
     if (short.length) {
-      errors.push(`Not enough players at ${short.length} position(s) — ${short.join('; ')}.`);
+      const detail = short.map((s) => `${s.position}: has ${s.has}, needs ${s.needs}`).join('; ');
+      errors.push(`Not enough players at ${short.length} position(s) — ${detail}.`);
     }
     if (errors.length) return { errors, warnings, clipboard: null };
 
@@ -313,6 +334,8 @@
     CLASS_YEAR_TO_CODE,
     PORTRAIT_ID_BY_SKIN_TONE,
     POSITION_MINIMUMS,
+    POSITION_GROUP_MINIMUMS,
+    findRosterShortfalls,
     MIN_PLAYERS,
     MAX_PLAYERS,
   };

@@ -22,7 +22,7 @@
     POSITION_ABBREV_TO_EA_CODE,
     CLASS_YEAR_TO_CODE,
     PORTRAIT_ID_BY_SKIN_TONE,
-    POSITION_MINIMUMS,
+    findRosterShortfalls,
     MIN_PLAYERS,
     MAX_PLAYERS,
   } = window.TCCsvImport;
@@ -115,9 +115,7 @@
       const pos = POSITION_BY_CODE[p.positionCode];
       if (pos) counts[pos] = (counts[pos] || 0) + 1;
     }
-    const shortPositions = Object.entries(POSITION_MINIMUMS)
-      .filter(([pos, min]) => min > 0 && (counts[pos] || 0) < min)
-      .map(([pos, min]) => ({ position: pos, has: counts[pos] || 0, needs: min }));
+    const shortPositions = findRosterShortfalls(counts);
 
     return {
       playerCount: players.length,
