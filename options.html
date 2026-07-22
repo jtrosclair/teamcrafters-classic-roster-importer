@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Import roster from CSV — TeamCrafters</title>
+<title>Roster &amp; uniforms — TeamCrafters</title>
 <style>
   :root { color-scheme: light; }
   body {
@@ -50,15 +50,62 @@
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eceef1; vertical-align: top; }
   th { color: #5f6b7a; font-weight: 600; }
   .muted { color: #5f6b7a; font-size: 12.5px; }
+  .team-list {
+    max-height: 220px; overflow-y: auto; border: 1px solid #e2e5ea; border-radius: 6px;
+    margin-bottom: 12px;
+  }
+  .team-row {
+    display: flex; align-items: baseline; gap: 10px; padding: 7px 10px; cursor: pointer;
+    font-size: 13px; border-bottom: 1px solid #f1f3f5;
+  }
+  .team-row:last-child { border-bottom: none; }
+  .team-row:hover { background: #f5f7fa; }
+  .team-row.selected { background: #e8f0fe; }
+  .team-row .nm { flex: 1; font-weight: 600; }
+  .team-row .ab { color: #5f6b7a; font-size: 11.5px; font-variant: tabular-nums; }
+  .team-row .ct { color: #5f6b7a; font-size: 11.5px; }
+  .team-list .none { padding: 12px 10px; color: #5f6b7a; font-size: 13px; }
+  .uni-row {
+    display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12.5px;
+  }
+  .uni-row .un { flex: 1; }
+  .chip {
+    font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px;
+    letter-spacing: .3px;
+  }
+  .chip.dark { background: #2b3440; color: #fff; }
+  .chip.light { background: #eef1f5; color: #333; border: 1px solid #d7dbe0; }
+  .chip.official { background: #e9f7ee; color: #1c5b31; border: 1px solid #b7e0c4; }
 </style>
 </head>
 <body>
   <header>
     <img src="icons/icon48.png" alt="">
-    <h1>Import a roster from a CSV</h1>
+    <h1>Roster &amp; uniforms</h1>
   </header>
 
   <main>
+    <div class="card" id="uniformCard">
+      <h2>Team uniforms</h2>
+      <p class="sub">
+        Replace your team's uniforms with a real school's full set. Pick a team here, then save your
+        team in Team Builder &mdash; you'll be asked to confirm before anything is uploaded.
+      </p>
+
+      <div id="uniformArmed" class="result ok" style="display:none;"></div>
+
+      <div id="uniformPicker">
+        <input type="text" id="uniformSearch" placeholder="Search teams…" autocomplete="off">
+        <div id="teamList" class="team-list"></div>
+        <div id="uniformPreview"></div>
+        <div class="row" style="margin-top:12px;">
+          <button id="armUniformsBtn" disabled>Use these uniforms</button>
+          <span class="muted" id="uniformHint">No team selected</span>
+        </div>
+      </div>
+      <button id="clearUniformsBtn" class="secondary" style="display:none;">Clear</button>
+    </div>
+
     <div class="card">
       <h2>1. Start from the sample</h2>
       <p class="sub">
@@ -149,6 +196,7 @@
   <script src="roster-merge.js"></script>
   <script src="cfb27-position-ovr-calculator.js"></script>
   <script src="csv-import.js"></script>
+  <script src="uniform-build.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

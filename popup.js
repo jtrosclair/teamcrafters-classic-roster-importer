@@ -9,6 +9,7 @@
 // if not, see <https://www.gnu.org/licenses/>.
 
 const STORAGE_KEY = 'tcRosterClipboard';
+const UNIFORM_KEY = 'tcUniformClipboard';
 
 function formatCopiedAt(iso) {
   try { return new Date(iso).toLocaleString(); } catch { return iso; }
@@ -43,15 +44,48 @@ function render(stored) {
   clearBtn.style.display = 'block';
 }
 
+function renderUniforms(armed) {
+  const el = document.getElementById('uniformStatus');
+  const clearBtn = document.getElementById('clearUniformBtn');
+
+  if (!armed) {
+    el.className = 'status-card empty';
+    el.innerHTML = '<div>No team uniforms selected.</div>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+
+  el.className = 'status-card';
+  el.innerHTML = `
+    <div class="team-name">${armed.teamName ?? 'Unknown team'} uniforms</div>
+    <div class="meta">${armed.uniformCount ?? '?'} uniforms ready</div>
+    <div class="meta">Save in Team Builder to apply — you'll confirm first.</div>
+  `;
+  clearBtn.style.display = 'block';
+}
+
 chrome.storage.local.get(STORAGE_KEY, (result) => {
   render(result[STORAGE_KEY] || null);
+});
+
+chrome.storage.local.get(UNIFORM_KEY, (result) => {
+  renderUniforms(result[UNIFORM_KEY] || null);
 });
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   chrome.storage.local.remove(STORAGE_KEY, () => render(null));
 });
 
+document.getElementById('clearUniformBtn').addEventListener('click', () => {
+  chrome.storage.local.remove(UNIFORM_KEY, () => renderUniforms(null));
+});
+
 document.getElementById('csvLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.runtime.openOptionsPage();
+});
+
+document.getElementById('uniformLink').addEventListener('click', (e) => {
   e.preventDefault();
   chrome.runtime.openOptionsPage();
 });

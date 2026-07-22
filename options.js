@@ -13,6 +13,7 @@
 // inject.js can serve it as a Team Builder preset.
 (function () {
   const STORAGE_KEY = 'tcRosterClipboard';
+  const UNIFORM_KEY = 'tcUniformClipboard';
 
   const fileInput = document.getElementById('csvFile');
   const teamInput = document.getElementById('teamName');
@@ -31,6 +32,131 @@
     const more = items.length > max ? `<li>…and ${items.length - max} more</li>` : '';
     return `<ul>${shown}${more}</ul>`;
   }
+
+  // --- team uniforms ---------------------------------------------------------------------
+  // Pick a school; its whole uniform set is converted to EA's payload shape here and stored, so
+  // the page on ea.com never needs the catalog.
+  const uniSearch = document.getElementById('uniformSearch');
+  const teamListEl = document.getElementById('teamList');
+  const previewEl = document.getElementById('uniformPreview');
+  const armBtn = document.getElementById('armUniformsBtn');
+  const uniHint = document.getElementById('uniformHint');
+  const armedEl = document.getElementById('uniformArmed');
+  const pickerEl = document.getElementById('uniformPicker');
+  const clearUniBtn = document.getElementById('clearUniformsBtn');
+
+  let catalog = null;
+  let selectedTeam = null;
+
+  function renderTeamList(filter) {
+    const q = String(filter || '').trim().toLowerCase();
+    const names = Object.keys(catalog.teams).filter((n) => {
+      if (!q) return true;
+      const t = catalog.teams[n];
+      return n.toLowerCase().includes(q) || String(t.abbr || '').toLowerCase().includes(q);
+    });
+    if (!names.length) {
+      teamListEl.innerHTML = '<div class="none">No teams match that search.</div>';
+      return;
+    }
+    teamListEl.innerHTML = names
+      .map((n) => {
+        const t = catalog.teams[n];
+        const count = t.uniforms.length;
+        return `<div class="team-row${n === selectedTeam ? ' selected' : ''}" data-team="${esc(n)}">
+          <span class="nm">${esc(n)}</span>
+          <span class="ab">${esc(t.abbr || '')}</span>
+          <span class="ct">${count} uniform${count === 1 ? '' : 's'}</span>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function renderPreview() {
+    if (!selectedTeam) {
+      previewEl.innerHTML = '';
+      armBtn.disabled = true;
+      uniHint.textContent = 'No team selected';
+      return;
+    }
+    const team = catalog.teams[selectedTeam];
+    const rows = team.uniforms
+      .map((u) => {
+        // loadoutType 6 is EA's dark/home slot, 3 is light/away.
+        const dark = u.loadoutType === 6;
+        return `<div class="uni-row">
+          <span class="un">${esc(u.displayName)}</span>
+          <span class="chip ${dark ? 'dark' : 'light'}">${dark ? 'DARK' : 'LIGHT'}</span>
+          ${u.currentOfficial ? '<span class="chip official">CURRENT</span>' : ''}
+        </div>`;
+      })
+      .join('');
+    previewEl.innerHTML =
+      `<p class="sub" style="margin-bottom:2px;"><b>${esc(selectedTeam)}</b> — ` +
+      `${team.uniforms.length} uniform${team.uniforms.length === 1 ? '' : 's'}</p>${rows}`;
+    armBtn.disabled = false;
+    uniHint.textContent = '';
+  }
+
+  function renderArmed(armed) {
+    if (!armed) {
+      armedEl.style.display = 'none';
+      pickerEl.style.display = '';
+      clearUniBtn.style.display = 'none';
+      return;
+    }
+    armedEl.style.display = 'block';
+    armedEl.innerHTML =
+      `<b>${esc(armed.teamName)}'s ${armed.uniformCount} uniforms are ready.</b><br>` +
+      `Save your team in EA Team Builder to apply them — you'll be asked to confirm first.` +
+      `<br><span class="muted">If Team Builder is already open, reload the page.</span>`;
+    pickerEl.style.display = 'none';
+    clearUniBtn.style.display = 'inline-block';
+  }
+
+  teamListEl.addEventListener('click', (e) => {
+    const row = e.target.closest('.team-row');
+    if (!row) return;
+    selectedTeam = row.dataset.team;
+    renderTeamList(uniSearch.value);
+    renderPreview();
+  });
+
+  uniSearch.addEventListener('input', () => renderTeamList(uniSearch.value));
+
+  armBtn.addEventListener('click', async () => {
+    if (!selectedTeam) return;
+    armBtn.disabled = true;
+    try {
+      const set = window.TCUniformBuild.buildUniformSet(selectedTeam, catalog.teams[selectedTeam]);
+      await chrome.storage.local.set({ [UNIFORM_KEY]: set });
+      renderArmed(set);
+    } catch (err) {
+      uniHint.textContent = `Couldn't use those uniforms: ${err.message}`;
+      armBtn.disabled = false;
+    }
+  });
+
+  clearUniBtn.addEventListener('click', async () => {
+    await chrome.storage.local.remove(UNIFORM_KEY);
+    selectedTeam = null;
+    renderArmed(null);
+    renderTeamList(uniSearch.value);
+    renderPreview();
+  });
+
+  (async function initUniforms() {
+    try {
+      catalog = await fetch(chrome.runtime.getURL('uniform-catalog.json')).then((r) => r.json());
+      uniSearch.placeholder = `Search ${catalog.teamCount} teams…`;
+      renderTeamList('');
+      const stored = await chrome.storage.local.get(UNIFORM_KEY);
+      renderArmed(stored[UNIFORM_KEY] || null);
+    } catch (err) {
+      document.getElementById('uniformCard').innerHTML =
+        `<h2>Team uniforms</h2><div class="result err">Couldn't load the uniform catalog: ${esc(err.message)}</div>`;
+    }
+  })();
 
   // --- download the bundled sample ---
   document.getElementById('downloadSample').addEventListener('click', async () => {

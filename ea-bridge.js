@@ -9,18 +9,21 @@
 // if not, see <https://www.gnu.org/licenses/>.
 
 // ea-bridge.js — ISOLATED world content script.
-// inject.js (MAIN world) cannot call chrome.storage directly, so this relays the
-// TeamCrafters roster clipboard from extension storage into the page on request.
+// inject.js (MAIN world) cannot call chrome.storage directly, so this relays what's stored into
+// the page on request: the TeamCrafters roster clipboard, and the armed uniform set.
 (function () {
-  const STORAGE_KEY = 'tcRosterClipboard';
+  const RELAYS = [
+    { key: 'tcRosterClipboard', request: 'tc-roster-clipboard-request', response: 'tc-roster-clipboard-response' },
+    { key: 'tcUniformClipboard', request: 'tc-uniform-clipboard-request', response: 'tc-uniform-clipboard-response' },
+  ];
 
-  window.addEventListener('tc-roster-clipboard-request', () => {
-    chrome.storage.local.get(STORAGE_KEY, (result) => {
-      window.dispatchEvent(
-        new CustomEvent('tc-roster-clipboard-response', {
-          detail: result[STORAGE_KEY] || null,
-        })
-      );
+  for (const relay of RELAYS) {
+    window.addEventListener(relay.request, () => {
+      chrome.storage.local.get(relay.key, (result) => {
+        window.dispatchEvent(
+          new CustomEvent(relay.response, { detail: result[relay.key] || null })
+        );
+      });
     });
-  });
+  }
 })();

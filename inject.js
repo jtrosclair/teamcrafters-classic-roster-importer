@@ -35,65 +35,18 @@
   // template IS Cupcake, so this is the id our roster is valid against.
   const CUPCAKE_PRESET_ID = 1238;
 
-  // === EXPERIMENTAL: uniform replacement on save =========================================
-  // Saving a team PUTs the whole team payload to a pre-signed S3 URL. We hold that request,
-  // swap a uniform into the payload, and ask before letting it go.
+  // === Uniform replacement on save =======================================================
+  // Saving a team PUTs the whole team payload to a pre-signed S3 URL. When a uniform set is armed
+  // (picked on the options page, stored by uniform-build.js) we hold that request, replace the
+  // team's uniforms with the armed set, and ask before letting it go.
   //
-  // This is the one write path in the extension, so it is gated on an explicit confirmation
-  // every time — nothing modified is ever uploaded without the user clicking the button. The
-  // countdown below defaults to sending the payload UNCHANGED, never to applying our edit.
-  //
-  // First cut: a single hardcoded uniform replacing slot 0, to prove the path end to end.
+  // This is the one write path in the extension, so it is gated on an explicit confirmation every
+  // time — nothing modified is ever uploaded without the user clicking the button. The countdown
+  // below defaults to sending the payload UNCHANGED, never to applying our edit. With nothing
+  // armed the request isn't touched at all.
   const UPLOAD_HOST = 'mcr-prod-268.s3.us-west-2.amazonaws.com';
   const UPLOAD_PATTERN = /nonce-primary\.json/;
 
-  const TEST_UNIFORM = {
-    displayName: 'CRAZY',
-    currentOfficial: true,
-    isCustom: false,
-    uniform: {
-      loadoutType: 6,
-      loadoutCategory: 1,
-      loadoutElements: [
-        // School-specific assets resolve under plain "content/..."; only the generic shared items
-        // (the shoes below) carry the "ContentShared/" root — matching how EA's own saved payload
-        // splits them.
-        {
-          slotType: 93,
-          itemAssetName: 'content/FootballCharacter/Items/Uniform/Helmet/U_LSU_HELMET_2021_GOLD',
-          itemDisplayName: 'HOME HELMET',
-        },
-        {
-          slotType: 98,
-          itemAssetName: 'content/FootballCharacter/Items/Uniform/Jersey/U_ORE_JERSEY_2023_WHITE',
-          itemDisplayName: 'HOME JERSEY',
-        },
-        {
-          slotType: 97,
-          itemAssetName: 'content/FootballCharacter/Items/Uniform/Pants/U_ORST_PANTS_2024_GRAY',
-          itemDisplayName: 'HOME PANTS',
-        },
-        {
-          slotType: 94,
-          itemAssetName: 'content/FootballCharacter/Items/Uniform/Socks/U_ORST_SOCKS_2023_WHITE',
-          itemDisplayName: 'HOME SOCKS',
-        },
-        {
-          slotType: 95,
-          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Shoes/U_GENERIC_SHOESX_WHIPRI',
-          itemDisplayName: 'HOME SHOES',
-        },
-        {
-          slotType: 96,
-          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Shoes/U_GENERIC_SHOESX_WHIPRI',
-          itemDisplayName: 'HOME SHOES',
-        },
-      ],
-      displayOrder: 9999,
-    },
-  };
-
-  // The signed upload URL expires, so we can't hold the save open forever waiting on a choice.
   const AUTO_CONTINUE_SECONDS = 20;
 
   function shouldInterceptUpload(url, method) {
@@ -131,22 +84,24 @@
   // Every real characterUniformItems entry carries this, across all four slot types.
   const SECONDARY_SLOT = 254;
 
-  // In EA's own payload, slots 93/94/97/98 are always reached through a characterUniformItems
-  // entry that binds the name to a team-authored part in uniformParts, while the shoes (95/96)
-  // are referenced directly and have no entry at all — there is no shoes category in uniformParts
-  // to bind to. Our replacements are prebuilt school assets, so they have no authorable part
-  // either; we register them anyway, in case the loader resolves those slots by lookup and simply
-  // fails on a name it can't find.
+  // In EA's own payload, exactly these four slots are reached through a characterUniformItems
+  // entry binding the name to a team-authored part in uniformParts. The shoes (95/96) are always
+  // referenced directly with no entry — there is no shoes category in uniformParts to bind to —
+  // so we register the same four EA does and leave shoes alone.
   //
-  // partItem is left empty because there is genuinely nothing to point at — matching displayName,
-  // which EA also leaves as "". If the save fails, this is the first thing to suspect: the shoes
-  // prove a direct reference needs no entry, so dropping registerUniformItems entirely is the
-  // other half of the experiment.
+  // Registering shoes is not merely unnecessary, it's unrepresentable: the same shoe asset fills
+  // both 95 and 96, and one entry cannot carry a correct primarySlot for two slots. EA's own data
+  // sidesteps that by never registering them.
+  const REGISTERED_SLOTS = new Set([93, 98, 97, 94]);
+
+  // partItem is left empty because there is genuinely nothing to point at — a prebuilt school
+  // asset has no authorable part — matching displayName, which EA also leaves as "".
   function registerUniformItems(frostbiteData, uniform) {
     const items = frostbiteData.characterUniformItems;
     if (!items || typeof items !== 'object') return [];
     const added = [];
     for (const el of uniform.uniform.loadoutElements) {
+      if (!REGISTERED_SLOTS.has(el.slotType)) continue;
       // Shared assets already work as direct references — don't touch what's proven.
       if (String(el.itemAssetName).startsWith('ContentShared/')) continue;
       if (items[el.itemAssetName]) continue;
@@ -162,27 +117,33 @@
     return added;
   }
 
-  // Swap TEST_UNIFORM into uniforms[0]. Returns what was replaced so the modal can name it.
+  // Replace the team's whole uniforms array with the armed set, registering every asset it brings.
   // Throws with a readable message if the payload isn't shaped the way we expect, so a shifting
   // EA schema surfaces as "couldn't apply" rather than a silently corrupted upload.
-  function applyUniform(payload) {
+  function applyUniformSet(payload, armed) {
     const frostbiteData = payload && payload.teamData && payload.teamData.frostbiteData;
     const visuals = frostbiteData && frostbiteData.teamVisuals;
     if (!visuals) {
       throw new Error('Could not find teamData.frostbiteData.teamVisuals in this save.');
     }
-    if (!Array.isArray(visuals.uniforms) || !visuals.uniforms.length) {
-      throw new Error('This team has no uniforms array to replace.');
+    if (!Array.isArray(visuals.uniforms)) {
+      throw new Error('This save has no uniforms array to replace.');
     }
-    const previous = visuals.uniforms[0];
-    const replacement = structuredClone(TEST_UNIFORM);
-    visuals.uniforms[0] = replacement;
-    // The team's own HOME entries stay in characterUniformItems even though uniforms[0] no longer
-    // points at them. Leaving them is the conservative choice — they're inert, and the AWAY ones
-    // are still live for uniforms[1].
-    const registered = registerUniformItems(frostbiteData, replacement);
+    if (!armed || !Array.isArray(armed.uniforms) || !armed.uniforms.length) {
+      throw new Error('The saved uniform selection is empty — pick a team again.');
+    }
+
+    const replacedCount = visuals.uniforms.length;
+    visuals.uniforms = structuredClone(armed.uniforms);
+
+    // The team's own entries stay in characterUniformItems even though nothing points at them now.
+    // Leaving them is the conservative choice — they're inert, and removing definitions is how the
+    // player-appearance experiments broke the game.
+    const registered = [];
+    for (const u of visuals.uniforms) registered.push(...registerUniformItems(frostbiteData, u));
+
     return {
-      previousName: (previous && previous.displayName) || 'uniform 1',
+      replacedCount,
       uniformCount: visuals.uniforms.length,
       registered,
     };
@@ -190,13 +151,13 @@
 
   // Ask before anything modified goes up. Resolves to the text to actually send — either our
   // edited payload or the original, untouched.
-  function promptUniformSwap(originalText) {
+  function promptUniformSwap(originalText, armed) {
     let modifiedText = null;
     let info = null;
     let error = null;
     try {
       const payload = JSON.parse(originalText);
-      info = applyUniform(payload);
+      info = applyUniformSet(payload, armed);
       modifiedText = JSON.stringify(payload);
     } catch (err) {
       error = err;
@@ -226,20 +187,20 @@
         'flex-direction:column;gap:14px;font-family:sans-serif;';
 
       const heading = document.createElement('div');
-      heading.textContent = 'Replace a uniform before saving?';
+      heading.textContent = 'Replace all uniforms before saving?';
       heading.style.cssText = 'font-weight:700;font-size:16px;color:#111;';
 
       const detail = document.createElement('div');
       detail.style.cssText = 'font-size:13px;color:#444;line-height:1.45;';
       if (error) {
-        detail.textContent = `Couldn't apply the uniform: ${error.message} Your team will save exactly as it is now.`;
+        detail.textContent = `Couldn't apply the uniforms: ${error.message} Your team will save exactly as it is now.`;
         detail.style.color = '#b00020';
       } else {
+        const was = info.replacedCount === 1 ? '1 uniform' : `${info.replacedCount} uniforms`;
         detail.textContent =
-          `This replaces your first uniform ("${info.previousName}") with the test uniform ` +
-          `"${TEST_UNIFORM.displayName}", and registers ${info.registered.length} new uniform ` +
-          `item(s). Your other ${info.uniformCount - 1} uniform(s), roster, logos, and stadium ` +
-          `are untouched.`;
+          `This replaces your ${was} with ${armed.teamName}'s ${info.uniformCount}, and registers ` +
+          `${info.registered.length} new uniform item(s). Your roster, logos, and stadium are ` +
+          `untouched.`;
       }
 
       const countdownEl = document.createElement('div');
@@ -253,7 +214,7 @@
       btnRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-top:4px;';
 
       const applyBtn = document.createElement('button');
-      applyBtn.textContent = `Yes, use the "${TEST_UNIFORM.displayName}" uniform`;
+      applyBtn.textContent = `Yes, use ${armed.teamName}'s uniforms`;
       applyBtn.disabled = modifiedText === null;
       applyBtn.style.cssText =
         'padding:10px 12px;border-radius:6px;border:none;font-weight:600;font-size:13px;' +
@@ -292,6 +253,18 @@
       }
       window.addEventListener('tc-roster-clipboard-response', onResponse);
       window.dispatchEvent(new CustomEvent('tc-roster-clipboard-request'));
+    });
+  }
+
+  // The armed uniform set, picked on the options page. Same relay, separate key.
+  function getArmedUniforms() {
+    return new Promise((resolve) => {
+      function onResponse(e) {
+        window.removeEventListener('tc-uniform-clipboard-response', onResponse);
+        resolve(e.detail);
+      }
+      window.addEventListener('tc-uniform-clipboard-response', onResponse);
+      window.dispatchEvent(new CustomEvent('tc-uniform-clipboard-request'));
     });
   }
 
@@ -341,12 +314,17 @@
     const url = typeof input === 'string' ? input : input && input.url;
     const method = (init && init.method) || (typeof input !== 'string' && input && input.method) || 'GET';
 
-    // Save upload — hold it, offer the swap, then send whatever the user chose.
+    // Save upload — with a uniform set armed, hold it, offer the swap, then send what was chosen.
+    // Nothing armed means the save is never touched.
     if (shouldInterceptUpload(url, method)) {
-      const originalBody = init && init.body;
-      const text = await bodyToText(originalBody);
-      const chosen = await promptUniformSwap(text);
-      return nativeFetch(input, { ...init, body: textToOriginalType(chosen, originalBody) });
+      const armed = await getArmedUniforms();
+      if (armed && Array.isArray(armed.uniforms) && armed.uniforms.length) {
+        const originalBody = init && init.body;
+        const text = await bodyToText(originalBody);
+        const chosen = await promptUniformSwap(text, armed);
+        return nativeFetch(input, { ...init, body: textToOriginalType(chosen, originalBody) });
+      }
+      return nativeFetch(input, init);
     }
 
     const kind = String(method).toUpperCase() === 'GET' ? classify(url) : null;
@@ -430,12 +408,19 @@
     const xhr = this;
     const info = xhr._tcInfo;
 
-    // Save upload (this is the path EA actually uses). Hold the synchronous send, ask, then send
-    // the chosen body. On any failure send the original untouched rather than dropping the save.
+    // Save upload (this is the path EA actually uses). With a uniform set armed, hold the
+    // synchronous send, ask, then send the chosen body. Nothing armed means the save goes through
+    // untouched. On any failure send the original rather than dropping the save.
     if (info && shouldInterceptUpload(info.url, info.method)) {
-      bodyToText(body)
-        .then((text) => promptUniformSwap(text))
-        .then((chosen) => origSend.call(xhr, textToOriginalType(chosen, body)))
+      getArmedUniforms()
+        .then((armed) => {
+          if (!armed || !Array.isArray(armed.uniforms) || !armed.uniforms.length) {
+            return origSend.call(xhr, body);
+          }
+          return bodyToText(body)
+            .then((text) => promptUniformSwap(text, armed))
+            .then((chosen) => origSend.call(xhr, textToOriginalType(chosen, body)));
+        })
         .catch((err) => {
           console.error('[TeamCrafters] uniform swap failed, saving unchanged:', err);
           origSend.call(xhr, body);
