@@ -50,7 +50,7 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 
 1. Go to a classic team page on TeamCrafters, find them at.
    `teamcrafters.net/app/classic-rosters`
-2. Click the blue **"Copy team as-is"** button (bottom-right).
+2. Click the blue **"Copy For Team Builder"** button (bottom-right).
 3. Open your team in EA College Football 27 Team Builder. Go to the "Roster" tab.
 4. On the **roster presets** dropdown, in the middle, you'll now see something like
    **"TeamCrafters: Alabama (NCAA 13)"**. Pick it.
@@ -75,7 +75,7 @@ Your roster also has to be able to field a team, so the import requires **45–8
 
 ## Or start from a real team and edit it
 
-The classic team page also has a **"Download CSV"** button next to "Copy team as-is". It hands you
+The classic team page also has a **"Download CSV"** button next to "Copy For Team Builder". It hands you
 that team as a spreadsheet in the same format the importer above accepts, so you can change a
 rating, swap a player, or reorder the depth chart and bring it back in.
 
@@ -92,7 +92,7 @@ Either way the file always downloads, and the button tells you exactly what to f
 
 ## Troubleshooting
 
-**The "Copy team as-is" button doesn't appear.**
+**The "Copy For Team Builder" button doesn't appear.**
 It only shows on a *classic* team page — the URL must look like
 `/app/classic-rosters/<game>/<team>`. It won't appear on the modern CFB 25/26/27 roster pages, or
 on a game's team-list page. If the URL looks right, reload the tab.

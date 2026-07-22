@@ -11,7 +11,7 @@
 // teamcrafters-copy.js — ISOLATED world, teamcrafters.net classic-roster team pages ONLY.
 // Adds two buttons to a classic team page:
 //
-//   "Copy team as-is" — fetches the normalized roster export, merges it onto the bundled EA base
+//   "Copy For Team Builder" — fetches the normalized roster export, merges it onto the bundled EA base
 //   template (see roster-merge.js) to produce a complete roster.json + character_visuals.json
 //   pair, and stores that in chrome.storage.local. On EA's Team Builder, the extension then
 //   offers it as an "Import from TeamCrafters" preset.
@@ -58,7 +58,7 @@
     row.style.cssText = 'display:flex;gap:8px;';
 
     const copyBtn = document.createElement('button');
-    copyBtn.textContent = 'Copy team as-is';
+    copyBtn.textContent = 'Copy For Team Builder';
     copyBtn.style.cssText = BTN_BASE + 'background:#1a73e8;color:#fff;' +
       'box-shadow:0 2px 8px rgba(0,0,0,.3);';
 
