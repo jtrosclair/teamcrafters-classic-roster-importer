@@ -13,7 +13,7 @@
 // loader our roster + visuals when it's selected. EA's loader does the actual roster replacement,
 // so we never touch its internal state.
 //
-// It intercepts exactly three GET responses:
+// It intercepts three GET responses:
 //   1. template_rosters.json  — the preset list. While a roster is armed we REPLACE the Cupcake
 //      preset entry (keeping its real id) with our "Import from TeamCrafters" one. Reusing the
 //      Cupcake preset's id is important: EA copies the chosen preset's id into the loaded roster's
@@ -27,10 +27,217 @@
 // The roster/visuals data itself is built at copy time on teamcrafters.net and lives in
 // chrome.storage.local; ea-bridge.js (ISOLATED world) relays it here, since MAIN world has no
 // chrome.* APIs.
+//
+// It ALSO intercepts one upload (see "uniform replacement" below) — the only place this extension
+// changes what gets written to EA rather than what gets read from it.
 (function () {
   // The Cupcake preset — its id becomes the loaded roster's templateId, and our bundled base
   // template IS Cupcake, so this is the id our roster is valid against.
   const CUPCAKE_PRESET_ID = 1238;
+
+  // === EXPERIMENTAL: uniform replacement on save =========================================
+  // Saving a team PUTs the whole team payload to a pre-signed S3 URL. We hold that request,
+  // swap a uniform into the payload, and ask before letting it go.
+  //
+  // This is the one write path in the extension, so it is gated on an explicit confirmation
+  // every time — nothing modified is ever uploaded without the user clicking the button. The
+  // countdown below defaults to sending the payload UNCHANGED, never to applying our edit.
+  //
+  // First cut: a single hardcoded uniform replacing slot 0, to prove the path end to end.
+  const UPLOAD_HOST = 'mcr-prod-268.s3.us-west-2.amazonaws.com';
+  const UPLOAD_PATTERN = /nonce-primary\.json/;
+
+  const TEST_UNIFORM = {
+    displayName: 'CRAZY',
+    currentOfficial: true,
+    isCustom: false,
+    uniform: {
+      loadoutType: 6,
+      loadoutCategory: 1,
+      loadoutElements: [
+        {
+          slotType: 93,
+          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Helmet/U_LSU_HELMET_2021_GOLD',
+          itemDisplayName: 'HOME HELMET',
+        },
+        {
+          slotType: 98,
+          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Jersey/U_ORE_JERSEY_2023_WHITE',
+          itemDisplayName: 'HOME JERSEY',
+        },
+        {
+          slotType: 97,
+          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Pants/U_ORST_PANTS_2024_GRAY',
+          itemDisplayName: 'HOME PANTS',
+        },
+        {
+          slotType: 94,
+          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Socks/U_ORST_SOCKS_2023_WHITE',
+          itemDisplayName: 'HOME SOCKS',
+        },
+        {
+          slotType: 95,
+          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Shoes/U_GENERIC_SHOESX_WHIPRI',
+          itemDisplayName: 'HOME SHOES',
+        },
+        {
+          slotType: 96,
+          itemAssetName: 'ContentShared/content/FootballCharacter/Items/Uniform/Shoes/U_GENERIC_SHOESX_WHIPRI',
+          itemDisplayName: 'HOME SHOES',
+        },
+      ],
+      displayOrder: 9999,
+    },
+  };
+
+  // The signed upload URL expires, so we can't hold the save open forever waiting on a choice.
+  const AUTO_CONTINUE_SECONDS = 20;
+
+  function shouldInterceptUpload(url, method) {
+    try {
+      const u = new URL(url, location.href);
+      return (
+        String(method).toUpperCase() === 'PUT' &&
+        u.hostname === UPLOAD_HOST &&
+        UPLOAD_PATTERN.test(u.pathname)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  // --- body normalization: EA may hand us a string, Blob, ArrayBuffer, or a typed-array view,
+  // and whatever we send back has to be the same kind of thing.
+  async function bodyToText(body) {
+    if (body == null) return '';
+    if (typeof body === 'string') return body;
+    if (body instanceof Blob) return await body.text();
+    if (body instanceof ArrayBuffer) return new TextDecoder('utf-8').decode(body);
+    if (ArrayBuffer.isView(body)) return new TextDecoder('utf-8').decode(body.buffer);
+    if (body instanceof URLSearchParams) return body.toString();
+    return String(body);
+  }
+
+  function textToOriginalType(text, original) {
+    if (original instanceof ArrayBuffer) return new TextEncoder().encode(text).buffer;
+    if (ArrayBuffer.isView(original)) return new TextEncoder().encode(text);
+    if (original instanceof Blob) return new Blob([text], { type: original.type || 'application/json' });
+    return text;
+  }
+
+  // Swap TEST_UNIFORM into uniforms[0]. Returns what was replaced so the modal can name it.
+  // Throws with a readable message if the payload isn't shaped the way we expect, so a shifting
+  // EA schema surfaces as "couldn't apply" rather than a silently corrupted upload.
+  function applyUniform(payload) {
+    const visuals = payload && payload.teamData && payload.teamData.frostbiteData
+      && payload.teamData.frostbiteData.teamVisuals;
+    if (!visuals) {
+      throw new Error('Could not find teamData.frostbiteData.teamVisuals in this save.');
+    }
+    if (!Array.isArray(visuals.uniforms) || !visuals.uniforms.length) {
+      throw new Error('This team has no uniforms array to replace.');
+    }
+    const previous = visuals.uniforms[0];
+    visuals.uniforms[0] = structuredClone(TEST_UNIFORM);
+    return {
+      previousName: (previous && previous.displayName) || 'uniform 1',
+      uniformCount: visuals.uniforms.length,
+    };
+  }
+
+  // Ask before anything modified goes up. Resolves to the text to actually send — either our
+  // edited payload or the original, untouched.
+  function promptUniformSwap(originalText) {
+    let modifiedText = null;
+    let info = null;
+    let error = null;
+    try {
+      const payload = JSON.parse(originalText);
+      info = applyUniform(payload);
+      modifiedText = JSON.stringify(payload);
+    } catch (err) {
+      error = err;
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let remaining = AUTO_CONTINUE_SECONDS;
+      let timerId = null;
+
+      function settle(value) {
+        if (settled) return;
+        settled = true;
+        clearInterval(timerId);
+        try { overlay.remove(); } catch {}
+        resolve(value);
+      }
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText =
+        'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147483647;display:flex;' +
+        'align-items:center;justify-content:center;';
+
+      const box = document.createElement('div');
+      box.style.cssText =
+        'background:#fff;padding:20px;border-radius:10px;width:440px;max-width:90vw;display:flex;' +
+        'flex-direction:column;gap:14px;font-family:sans-serif;';
+
+      const heading = document.createElement('div');
+      heading.textContent = 'Replace a uniform before saving?';
+      heading.style.cssText = 'font-weight:700;font-size:16px;color:#111;';
+
+      const detail = document.createElement('div');
+      detail.style.cssText = 'font-size:13px;color:#444;line-height:1.45;';
+      if (error) {
+        detail.textContent = `Couldn't apply the uniform: ${error.message} Your team will save exactly as it is now.`;
+        detail.style.color = '#b00020';
+      } else {
+        detail.textContent =
+          `This replaces your first uniform ("${info.previousName}") with the test uniform ` +
+          `"${TEST_UNIFORM.displayName}". Your other ${info.uniformCount - 1} uniform(s), roster, ` +
+          `logos, and stadium are untouched.`;
+      }
+
+      const countdownEl = document.createElement('div');
+      countdownEl.style.cssText = 'font-size:12px;color:#888;';
+      const renderCountdown = () => {
+        countdownEl.textContent = `Saving unchanged in ${remaining}s if you don't choose…`;
+      };
+      renderCountdown();
+
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-top:4px;';
+
+      const applyBtn = document.createElement('button');
+      applyBtn.textContent = `Yes, use the "${TEST_UNIFORM.displayName}" uniform`;
+      applyBtn.disabled = modifiedText === null;
+      applyBtn.style.cssText =
+        'padding:10px 12px;border-radius:6px;border:none;font-weight:600;font-size:13px;' +
+        (applyBtn.disabled
+          ? 'background:#c7c7c7;color:#fff;cursor:not-allowed;'
+          : 'background:#1a73e8;color:#fff;cursor:pointer;');
+      applyBtn.onclick = () => settle(modifiedText);
+
+      const keepBtn = document.createElement('button');
+      keepBtn.textContent = error ? 'Continue' : 'No, save my uniforms unchanged';
+      keepBtn.style.cssText =
+        'padding:10px 12px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#333;' +
+        'font-weight:600;font-size:13px;cursor:pointer;';
+      keepBtn.onclick = () => settle(originalText);
+
+      btnRow.append(applyBtn, keepBtn);
+      box.append(heading, detail, btnRow, countdownEl);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+
+      // Default to the SAFE option — send what EA built, unmodified.
+      timerId = setInterval(() => {
+        if (--remaining <= 0) return settle(originalText);
+        renderCountdown();
+      }, 1000);
+    });
+  }
+  // === end uniform replacement ===========================================================
 
   // --- get the stored preset payload from ea-bridge.js via a CustomEvent round trip ---
   function getStored() {
@@ -89,6 +296,15 @@
   window.fetch = async function (input, init = {}) {
     const url = typeof input === 'string' ? input : input && input.url;
     const method = (init && init.method) || (typeof input !== 'string' && input && input.method) || 'GET';
+
+    // Save upload — hold it, offer the swap, then send whatever the user chose.
+    if (shouldInterceptUpload(url, method)) {
+      const originalBody = init && init.body;
+      const text = await bodyToText(originalBody);
+      const chosen = await promptUniformSwap(text);
+      return nativeFetch(input, { ...init, body: textToOriginalType(chosen, originalBody) });
+    }
+
     const kind = String(method).toUpperCase() === 'GET' ? classify(url) : null;
     if (!kind) return nativeFetch(input, init);
 
@@ -169,6 +385,20 @@
   XMLHttpRequest.prototype.send = function (body) {
     const xhr = this;
     const info = xhr._tcInfo;
+
+    // Save upload (this is the path EA actually uses). Hold the synchronous send, ask, then send
+    // the chosen body. On any failure send the original untouched rather than dropping the save.
+    if (info && shouldInterceptUpload(info.url, info.method)) {
+      bodyToText(body)
+        .then((text) => promptUniformSwap(text))
+        .then((chosen) => origSend.call(xhr, textToOriginalType(chosen, body)))
+        .catch((err) => {
+          console.error('[TeamCrafters] uniform swap failed, saving unchanged:', err);
+          origSend.call(xhr, body);
+        });
+      return;
+    }
+
     const kind = info && String(info.method).toUpperCase() === 'GET' ? classify(info.url) : null;
     if (!kind) return origSend.call(xhr, body);
 
