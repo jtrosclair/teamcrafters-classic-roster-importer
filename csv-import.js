@@ -51,13 +51,14 @@
   // its own value is rejected. Every other rating must be present and 0-99.
   const REQUIRED_RATINGS = RATING_KEYS.filter((k) => k !== 'OVR');
 
-  // A roster has to be able to field a team. These are EA's practical minimums per position;
-  // they sum to exactly the 50-player floor.
+  // A roster has to be able to field a team. These are EA's practical minimums per position; they
+  // sum to 49, just under the 50-player floor, so meeting every position still leaves a free spot.
+  // Only one kicker is required — real teams routinely carry exactly one.
   const MIN_PLAYERS = 50;
   const MAX_PLAYERS = 85;
   const POSITION_MINIMUMS = {
     QB: 2, HB: 3, FB: 0, WR: 5, TE: 3, LT: 2, LG: 2, C: 2, RG: 2, RT: 2, LE: 2, RE: 2,
-    DT: 3, LOLB: 2, ROLB: 2, MLB: 3, CB: 5, FS: 3, SS: 2, K: 2, P: 1,
+    DT: 3, LOLB: 2, ROLB: 2, MLB: 3, CB: 5, FS: 3, SS: 2, K: 1, P: 1,
   };
 
   // Don't build a wall of thousands of messages for a badly-formed file.
