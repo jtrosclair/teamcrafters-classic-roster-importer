@@ -37,8 +37,9 @@
 
   // === Uniform replacement on save =======================================================
   // Saving a team PUTs the whole team payload to a pre-signed S3 URL. When a uniform set is armed
-  // (picked on the options page, stored by uniform-build.js) we hold that request, replace the
-  // team's uniforms with the armed set, and ask before letting it go.
+  // (picked on the options page, stored by uniform-build.js) we hold that request, append the
+  // armed set to the team's uniforms (see applyUniformSet for why we append rather than replace),
+  // and ask before letting it go.
   //
   // This is the one write path in the extension, so it is gated on an explicit confirmation every
   // time — nothing modified is ever uploaded without the user clicking the button. The countdown
@@ -117,33 +118,51 @@
     return added;
   }
 
-  // Replace the team's whole uniforms array with the armed set, registering every asset it brings.
-  // Throws with a readable message if the payload isn't shaped the way we expect, so a shifting
-  // EA schema surfaces as "couldn't apply" rather than a silently corrupted upload.
+  // Append the armed set to the team's uniforms rather than replacing them.
+  //
+  // Replacing the whole array outright breaks Team Builder's loader: the team's original uniforms
+  // are the only ones whose parts resolve from the team's own game files, and with them gone the
+  // site can't render the uniform screen. So we keep the first original uniform as an anchor,
+  // rename it "UNUSED", demote it to an alternate slot, and append the imported school uniforms
+  // after it. The kept anchor keeps the loader happy; the appended set is what the user picks.
+  const ALTERNATE_LOADOUT_TYPE = 8; // loadoutType/displayOrder pair EA uses for a selectable extra
+  const ALTERNATE_DISPLAY_ORDER = 0;
+
   function applyUniformSet(payload, armed) {
     const frostbiteData = payload && payload.teamData && payload.teamData.frostbiteData;
     const visuals = frostbiteData && frostbiteData.teamVisuals;
     if (!visuals) {
       throw new Error('Could not find teamData.frostbiteData.teamVisuals in this save.');
     }
-    if (!Array.isArray(visuals.uniforms)) {
-      throw new Error('This save has no uniforms array to replace.');
+    if (!Array.isArray(visuals.uniforms) || !visuals.uniforms.length) {
+      throw new Error('This save has no uniforms to anchor the import to.');
     }
     if (!armed || !Array.isArray(armed.uniforms) || !armed.uniforms.length) {
       throw new Error('The saved uniform selection is empty — pick a team again.');
     }
 
-    const replacedCount = visuals.uniforms.length;
-    visuals.uniforms = structuredClone(armed.uniforms);
+    // Keep the first original uniform as the loadable anchor, marked UNUSED and demoted to an
+    // alternate slot. Its own loadoutElements/characterUniformItems/uniformParts are untouched, so
+    // it still resolves from the team's game files.
+    const anchor = structuredClone(visuals.uniforms[0]);
+    anchor.displayName = 'UNUSED';
+    anchor.currentOfficial = false;
+    if (anchor.uniform) {
+      anchor.uniform.loadoutType = ALTERNATE_LOADOUT_TYPE;
+      anchor.uniform.displayOrder = ALTERNATE_DISPLAY_ORDER;
+    }
 
-    // The team's own entries stay in characterUniformItems even though nothing points at them now.
-    // Leaving them is the conservative choice — they're inert, and removing definitions is how the
-    // player-appearance experiments broke the game.
+    const appended = structuredClone(armed.uniforms);
+    visuals.uniforms = [anchor, ...appended];
+
+    // Register only the appended uniforms' assets; the anchor's already exist from the original
+    // save. Existing entries are left in place — removing definitions is how the player-appearance
+    // experiments broke the game.
     const registered = [];
-    for (const u of visuals.uniforms) registered.push(...registerUniformItems(frostbiteData, u));
+    for (const u of appended) registered.push(...registerUniformItems(frostbiteData, u));
 
     return {
-      replacedCount,
+      appendedCount: appended.length,
       uniformCount: visuals.uniforms.length,
       registered,
     };
@@ -187,7 +206,7 @@
         'flex-direction:column;gap:14px;font-family:sans-serif;';
 
       const heading = document.createElement('div');
-      heading.textContent = 'Replace all uniforms before saving?';
+      heading.textContent = 'Add these uniforms before saving?';
       heading.style.cssText = 'font-weight:700;font-size:16px;color:#111;';
 
       const detail = document.createElement('div');
@@ -196,11 +215,11 @@
         detail.textContent = `Couldn't apply the uniforms: ${error.message} Your team will save exactly as it is now.`;
         detail.style.color = '#b00020';
       } else {
-        const was = info.replacedCount === 1 ? '1 uniform' : `${info.replacedCount} uniforms`;
         detail.textContent =
-          `This replaces your ${was} with ${armed.teamName}'s ${info.uniformCount}, and registers ` +
-          `${info.registered.length} new uniform item(s). Your roster, logos, and stadium are ` +
-          `untouched.`;
+          `This adds ${armed.teamName}'s ${info.appendedCount} uniforms to your team and keeps your ` +
+          `first uniform as "UNUSED" (Team Builder needs one of your own to load the screen). ` +
+          `Registers ${info.registered.length} new uniform item(s); your roster, logos, and stadium ` +
+          `are untouched.`;
       }
 
       const countdownEl = document.createElement('div');
