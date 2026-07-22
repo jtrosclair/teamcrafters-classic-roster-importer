@@ -56,15 +56,20 @@
   const MIN_PLAYERS = 50;
   const MAX_PLAYERS = 85;
   const POSITION_MINIMUMS = {
-    QB: 2, HB: 3, FB: 0, WR: 5, TE: 2, LT: 2, LG: 2, C: 2, RG: 2, RT: 2, LE: 2, RE: 2,
+    QB: 2, HB: 3, FB: 0, WR: 5, TE: 2, LT: 1, LG: 1, C: 1, RG: 1, RT: 1, LE: 2, RE: 2,
     DT: 3, LOLB: 1, ROLB: 1, MLB: 2, CB: 2, FS: 2, SS: 2, K: 1, P: 1,
   };
 
-  // Some requirements span a pair of positions. A defense needs three outside linebackers, but how
-  // they split across the two sides is the roster's business — the per-side minimums above only
-  // insist that neither side is empty. Together these come to 38 players, well under the 50 floor,
+  // Some requirements span a unit rather than a single spot: you need enough offensive linemen and
+  // outside linebackers overall, but how they're distributed is the roster's business. The
+  // per-position minimums above only insist that no spot in the unit is left empty.
+  //
+  // Labels are spelled out rather than shortened to "OL"/"OLB" on purpose — those aren't accepted
+  // position values, so naming them in an error would send people to write a column the importer
+  // rejects. Together with the per-position minimums this comes to 40, under the 50-player floor,
   // so a lean roster hits the floor before it hits the position table.
   const POSITION_GROUP_MINIMUMS = [
+    { label: 'LT+LG+C+RG+RT', positions: ['LT', 'LG', 'C', 'RG', 'RT'], min: 8 },
     { label: 'LOLB+ROLB', positions: ['LOLB', 'ROLB'], min: 3 },
   ];
 
