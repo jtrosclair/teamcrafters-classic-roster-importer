@@ -57,7 +57,7 @@
   const MAX_PLAYERS = 85;
   const POSITION_MINIMUMS = {
     QB: 2, HB: 3, FB: 0, WR: 5, TE: 2, LT: 1, LG: 1, C: 1, RG: 1, RT: 1, LE: 2, RE: 2,
-    DT: 3, LOLB: 1, ROLB: 1, MLB: 2, CB: 2, FS: 2, SS: 2, K: 1, P: 1,
+    DT: 3, LOLB: 1, ROLB: 1, MLB: 2, CB: 2, FS: 2, SS: 1, K: 1, P: 1,
   };
 
   // Some requirements span a unit rather than a single spot: you need enough offensive linemen and
@@ -66,7 +66,7 @@
   //
   // Labels are spelled out rather than shortened to "OL"/"OLB" on purpose — those aren't accepted
   // position values, so naming them in an error would send people to write a column the importer
-  // rejects. Together with the per-position minimums this comes to 40, under the 45-player floor,
+  // rejects. Together with the per-position minimums this comes to 39, under the 45-player floor,
   // so a lean roster hits the floor before it hits the position table.
   const POSITION_GROUP_MINIMUMS = [
     { label: 'LT+LG+C+RG+RT', positions: ['LT', 'LG', 'C', 'RG', 'RT'], min: 8 },
