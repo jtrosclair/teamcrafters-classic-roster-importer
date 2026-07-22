@@ -71,7 +71,7 @@ You don't have to start from a TeamCrafters team — you can bring your own rost
 
 Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone) can be left blank too; those fall back to the base template's values.
 
-Your roster also has to be able to field a team, so the import requires **50–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 3 TE, 2 each on the O-line, 2 LE/RE, 3 DT, 2 LOLB/ROLB, 3 MLB, 5 CB, 3 FS, 2 SS, 1 K, 1 P — FB optional). Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
+Your roster also has to be able to field a team, so the import requires **50–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 3 TE, 2 each on the O-line, 2 LE/RE, 3 DT, 2 LOLB/ROLB, 3 MLB, 5 CB, 2 FS, 2 SS, 1 K, 1 P — FB optional). Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
 
 ## Or start from a real team and edit it
 
