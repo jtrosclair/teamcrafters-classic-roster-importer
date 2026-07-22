@@ -31,25 +31,32 @@
   // inject.js, which does the actual registering; this copy only exists to report the count.
   const REGISTERED_SLOTS = new Set([93, 98, 97, 94]);
 
+  // A team's two current uniforms occupy EA's home (6) and away (3) slots. Everything beyond those
+  // is an extra, and in a real Team Builder save every extra carries loadoutType 8 / displayOrder 0
+  // — that pair is what marks a uniform as a selectable alternate rather than one of the two
+  // fixed slots. Observed in a save with three user-made uniforms alongside the stock Home/Away.
+  const ALTERNATE_LOADOUT_TYPE = 8;
+
   // One catalog uniform -> one teamVisuals.uniforms entry.
   //
   // paths are used verbatim rather than rebuilt from a prefix: the shoe root genuinely varies per
   // asset (U_GENERIC_SHOESX_WHIPRI sits under ContentShared/, the rest under content/), so any
   // reconstruction would be wrong for one group or the other.
   function toPayloadUniform(entry) {
+    const isCurrent = !!entry.currentOfficial;
     return {
       displayName: entry.displayName,
-      currentOfficial: !!entry.currentOfficial,
+      currentOfficial: isCurrent,
       isCustom: false,
       uniform: {
-        loadoutType: entry.loadoutType,
+        loadoutType: isCurrent ? entry.loadoutType : ALTERNATE_LOADOUT_TYPE,
         loadoutCategory: entry.loadoutCategory,
         loadoutElements: SLOTS.map((s) => ({
           slotType: s.slotType,
           itemAssetName: entry.paths[s.part],
           itemDisplayName: s.label,
         })),
-        displayOrder: 9999,
+        displayOrder: isCurrent ? 9999 : 0,
       },
     };
   }
