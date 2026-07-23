@@ -4,11 +4,10 @@
 
 ### Highlights
 
-- Add a uniform picker with 1,167 CFB 27 uniforms across 150 selectable groups, including Missouri State.
+- Add a uniform picker with 1,167 CFB 27 uniforms across 150 selectable groups.
 - Add selected uniforms to a Team Builder save only after an explicit confirmation. The original
   team uniform required by Team Builder is kept as an unused anchor.
-- Split uniform selection and CSV roster import into dedicated options-page tabs. Popup links open
-  the relevant tab directly.
+- Split uniform selection and CSV roster import into dedicated options-page tabs.
 - Support both legacy and current uniform-catalog formats, including named Frosty enum values.
 
 ### Install / update
