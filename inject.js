@@ -95,27 +95,68 @@
   // sidesteps that by never registering them.
   const REGISTERED_SLOTS = new Set([93, 98, 97, 94]);
 
-  // partItem is left empty because there is genuinely nothing to point at — a prebuilt school
-  // asset has no authorable part — matching displayName, which EA also leaves as "".
-  function registerUniformItems(frostbiteData, uniform) {
+  // uniform slot -> uniformParts category. Only slots we can supply a real part recipe for; a
+  // uniform.parts entry keyed by the singular form ("pants") carries the save-ready recipe.
+  const UNIFORM_PARTS_CATEGORY = { 97: 'pants' };
+  const PART_KIND_BY_SLOT = { 97: 'pants' };
+
+  // Wire one appended uniform into the save. Two kinds of slot:
+  //
+  //  - A slot we have a part recipe for (uniform.parts[kind]) becomes an EDITABLE team part: we
+  //    mint a team-local item name and part key from the save's own asset prefix, point the
+  //    loadoutElement at it, add a characterUniformItems entry with secondarySlot == primarySlot
+  //    (how EA marks a user-authored part, vs 254 for a stock one), and drop the recipe into
+  //    uniformParts under that key. This is what makes the piece swappable in the editor.
+  //
+  //  - Any other bound slot (93/98/94 for now) keeps its prebuilt-asset reference and just gets a
+  //    minimal characterUniformItems entry so the name resolves. Shared assets (shoes) already
+  //    resolve directly and are left alone.
+  //
+  // `index` makes the minted names unique across the appended uniforms.
+  function wireUniform(frostbiteData, visuals, uniform, index) {
     const items = frostbiteData.characterUniformItems;
-    if (!items || typeof items !== 'object') return [];
-    const added = [];
+    const parts = frostbiteData.uniformParts;
+    if (!items || typeof items !== 'object') return { registered: [], editable: [] };
+    const prefix = visuals.assetName || visuals.prefixName || 'tcimport';
+    const registered = [];
+    const editable = [];
+
     for (const el of uniform.uniform.loadoutElements) {
       if (!REGISTERED_SLOTS.has(el.slotType)) continue;
-      // Shared assets already work as direct references — don't touch what's proven.
       if (String(el.itemAssetName).startsWith('ContentShared/')) continue;
-      if (items[el.itemAssetName]) continue;
-      items[el.itemAssetName] = {
-        assetName: el.itemAssetName,
-        displayName: '',
-        primarySlot: el.slotType,
-        secondarySlot: SECONDARY_SLOT,
-        partItem: '',
-      };
-      added.push(el.itemAssetName);
+
+      const kind = PART_KIND_BY_SLOT[el.slotType];
+      const recipe = kind && uniform.parts && uniform.parts[kind];
+      const category = UNIFORM_PARTS_CATEGORY[el.slotType];
+
+      if (recipe && category && parts && parts[category]) {
+        // Editable team part.
+        const localName = `U_${prefix}_${kind.toUpperCase()}_imp${index}`;
+        const partKey = `${prefix}-imp${index}-${kind}`;
+        el.itemAssetName = localName;
+        items[localName] = {
+          assetName: localName,
+          primarySlot: el.slotType,
+          secondarySlot: el.slotType,
+          partItem: partKey,
+        };
+        parts[category][partKey] = recipe;
+        editable.push(localName);
+      } else if (!items[el.itemAssetName]) {
+        // Prebuilt-asset reference: just make the name resolve.
+        items[el.itemAssetName] = {
+          assetName: el.itemAssetName,
+          displayName: '',
+          primarySlot: el.slotType,
+          secondarySlot: SECONDARY_SLOT,
+          partItem: '',
+        };
+        registered.push(el.itemAssetName);
+      }
     }
-    return added;
+    // parts is our own metadata; it must not survive into the saved uniform.
+    delete uniform.parts;
+    return { registered, editable };
   }
 
   // Append the armed set to the team's uniforms rather than replacing them.
@@ -155,16 +196,22 @@
     const appended = structuredClone(armed.uniforms);
     visuals.uniforms = [anchor, ...appended];
 
-    // Register only the appended uniforms' assets; the anchor's already exist from the original
-    // save. Existing entries are left in place — removing definitions is how the player-appearance
+    // Wire only the appended uniforms; the anchor's parts already exist from the original save.
+    // Existing entries are left in place — removing definitions is how the player-appearance
     // experiments broke the game.
     const registered = [];
-    for (const u of appended) registered.push(...registerUniformItems(frostbiteData, u));
+    const editable = [];
+    appended.forEach((u, i) => {
+      const r = wireUniform(frostbiteData, visuals, u, i);
+      registered.push(...r.registered);
+      editable.push(...r.editable);
+    });
 
     return {
       appendedCount: appended.length,
       uniformCount: visuals.uniforms.length,
       registered,
+      editable,
     };
   }
 
@@ -215,11 +262,13 @@
         detail.textContent = `Couldn't apply the uniforms: ${error.message} Your team will save exactly as it is now.`;
         detail.style.color = '#b00020';
       } else {
+        const editableNote = info.editable.length
+          ? ` ${info.editable.length} part(s) are added as editable team pieces.` : '';
         detail.textContent =
           `This adds ${armed.teamName}'s ${info.appendedCount} uniforms to your team and keeps your ` +
           `first uniform as "UNUSED" (Team Builder needs one of your own to load the screen). ` +
-          `Registers ${info.registered.length} new uniform item(s); your roster, logos, and stadium ` +
-          `are untouched.`;
+          `Registers ${info.registered.length} new uniform item(s);${editableNote} your roster, ` +
+          `logos, and stadium are untouched.`;
       }
 
       const countdownEl = document.createElement('div');

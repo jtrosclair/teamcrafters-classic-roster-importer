@@ -3,3 +3,7 @@
 node_modules/
 .claude/
 release/
+
+# 98MB of decoded uniform recipes — the source the bundled uniform-recipes-*.json are built from.
+# Kept locally, regenerated with tools/build-uniform-recipes.mjs; not committed.
+recipes_target_format/

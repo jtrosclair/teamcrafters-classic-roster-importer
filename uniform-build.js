@@ -31,6 +31,42 @@
   // inject.js, which does the actual registering; this copy only exists to report the count.
   const REGISTERED_SLOTS = new Set([93, 98, 97, 94]);
 
+  // uniform slot -> uniformParts category / recipe kind. Used to attach a part recipe to the
+  // matching loadoutElement so inject.js can turn that slot into an editable team part rather than
+  // a fixed reference to a prebuilt asset. Only the parts we have recipes bundled for appear here.
+  const RECIPE_KIND_BY_SLOT = { 97: 'pants' };
+
+  // A part recipe is keyed in the bundle by the asset's normalized name: basename, minus a leading
+  // "U_", upper-cased. e.g. ".../U_ALA_PANTS_2023_WHITE" -> "ALA_PANTS_2023_WHITE".
+  function normalizePartName(itemAssetName) {
+    const base = String(itemAssetName).split('/').pop();
+    const stripped = /^U_/i.test(base) ? base.slice(2) : base;
+    return stripped.toUpperCase();
+  }
+
+  // Attach a save-ready part recipe to each uniform's matching slot, in place. `recipesByKind` is
+  // { pants: { NORMNAME: recipeEntry }, ... }. inject.js reads uniform.parts to build the editable
+  // team part; a slot with no recipe is left as its prebuilt-asset reference. Pure — no I/O.
+  function attachPartRecipes(uniforms, recipesByKind) {
+    let attached = 0;
+    const missing = [];
+    for (const u of uniforms) {
+      for (const el of u.uniform.loadoutElements) {
+        const kind = RECIPE_KIND_BY_SLOT[el.slotType];
+        const table = kind && recipesByKind && recipesByKind[kind];
+        if (!table) continue;
+        const recipe = table[normalizePartName(el.itemAssetName)];
+        if (recipe) {
+          (u.parts || (u.parts = {}))[kind] = recipe;
+          attached++;
+        } else {
+          missing.push(el.itemAssetName);
+        }
+      }
+    }
+    return { attached, missing };
+  }
+
   // A team's two current uniforms occupy EA's home (6) and away (3) slots. Everything beyond those
   // is an extra, and in a real Team Builder save every extra carries loadoutType 8 / displayOrder 0
   // — that pair is what marks a uniform as a selectable alternate rather than one of the two
@@ -107,13 +143,16 @@
     };
   }
 
-  // A whole team -> what gets stored and later written into the save.
-  function buildUniformSet(teamName, team) {
+  // A whole team -> what gets stored and later written into the save. When `recipesByKind` is
+  // supplied ({ pants: {...} }), each uniform's matching slot gets a save-ready part recipe
+  // attached under uniform.parts, which inject.js turns into an editable team part.
+  function buildUniformSet(teamName, team, recipesByKind) {
     const entries = normalizeUniforms(team);
     if (!entries.length) {
       throw new Error(`No uniforms found for ${teamName}.`);
     }
     const uniforms = entries.map(toPayloadUniform);
+    const parts = recipesByKind ? attachPartRecipes(uniforms, recipesByKind) : { attached: 0, missing: [] };
 
     // Count the assets that will need a characterUniformItems entry, so the picker can say how
     // many up front. Must mirror REGISTERED_SLOTS in inject.js: only the four slots EA itself
@@ -134,9 +173,13 @@
       armedAt: new Date().toISOString(),
       uniformCount: uniforms.length,
       assetCount: assets.size,
+      editablePartCount: parts.attached,
       uniforms,
     };
   }
 
-  window.TCUniformBuild = { buildUniformSet, normalizeCatalog, normalizeUniforms, toPayloadUniform, SLOTS };
+  window.TCUniformBuild = {
+    buildUniformSet, normalizeCatalog, normalizeUniforms, toPayloadUniform,
+    attachPartRecipes, normalizePartName, SLOTS,
+  };
 })();

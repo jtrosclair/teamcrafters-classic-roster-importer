@@ -74,6 +74,9 @@
 
   let catalog = null;
   let selectedTeam = null;
+  // { pants: { NORMNAME: recipeEntry } } — bundled part recipes, loaded lazily alongside the
+  // catalog. Missing/failed load is non-fatal: uniforms still import, just without editable parts.
+  let partRecipes = {};
 
   function renderTeamList(filter) {
     const q = String(filter || '').trim().toLowerCase();
@@ -155,7 +158,9 @@
     if (!selectedTeam) return;
     armBtn.disabled = true;
     try {
-      const set = window.TCUniformBuild.buildUniformSet(selectedTeam, catalog.teams[selectedTeam]);
+      const set = window.TCUniformBuild.buildUniformSet(
+        selectedTeam, catalog.teams[selectedTeam], partRecipes
+      );
       await chrome.storage.local.set({ [UNIFORM_KEY]: set });
       renderArmed(set);
     } catch (err) {
@@ -184,11 +189,25 @@
       renderTeamList('');
       const stored = await chrome.storage.local.get(UNIFORM_KEY);
       renderArmed(stored[UNIFORM_KEY] || null);
+      loadPartRecipes(); // non-blocking; the picker works with or without it
     } catch (err) {
       document.getElementById('uniformCard').innerHTML =
         `<h2>Team uniforms</h2><div class="result err">Couldn't load the uniform catalog: ${esc(err.message)}</div>`;
     }
   })();
+
+  // Load the bundled part recipes (currently pants only). Best-effort: if a bundle is missing or
+  // malformed, imports still work — those parts simply won't be editable in-game.
+  async function loadPartRecipes() {
+    for (const kind of ['pants']) {
+      try {
+        const res = await fetch(chrome.runtime.getURL(`uniform-recipes-${kind}.json`));
+        if (!res.ok) continue;
+        const doc = JSON.parse((await res.text()).replace(/^\uFEFF/, ''));
+        if (doc && doc.recipes) partRecipes[kind] = doc.recipes;
+      } catch { /* leave this kind out; non-fatal */ }
+    }
+  }
 
   // --- download the bundled sample ---
   document.getElementById('downloadSample').addEventListener('click', async () => {
