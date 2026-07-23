@@ -100,17 +100,26 @@
   const UNIFORM_PARTS_CATEGORY = { 97: 'pants' };
   const PART_KIND_BY_SLOT = { 97: 'pants' };
 
-  // EXPERIMENT (gator-scale diagnosis): imported pants render with a wrong scaly base texture. The
-  // per-pant color is correct (it lives in layerCompTexture tints, left untouched); the suspects
-  // are the two fields we don't copy verbatim — `name` (ours is a skin name, a real save used a
-  // base-template model) and `materialPreset` (we reconstruct a path from a bare, often-mismatched
-  // name). This forces both to values taken from a save that renders correctly. If the scale
-  // disappears, bisect the two; then replace this with the real per-pant derivation. Null disables.
-  const PANTS_BASE_OVERRIDE = {
-    name: 'ADIDAS_PANTS_WVN_A1',
-    materialPreset: 'content/characters/player/parts/uniforms/pants/presets/FSU_PANTS_2023_WHITE_preset',
-  };
-  const PART_OVERRIDE = { pants: PANTS_BASE_OVERRIDE };
+  // The recipe decode zeroes out each material/overlay's `transform` (UV scale, clampUv,
+  // transformRange, scaledTransform all 0/null). A zero UV scale maps the fabric texture wrong —
+  // that's the gator-scale render on imported parts. The data isn't recoverable from the recipe,
+  // but the save already contains the team's own working pants, whose transforms are correct and
+  // are a property of the mesh/UV rather than the color. So we copy the transform, by material and
+  // overlay index, from a donor part of the same kind already in the save. Colors/textures/tints
+  // stay the recipe's.
+  function borrowTransforms(target, donor) {
+    if (!target || !donor) return;
+    const copy = (dst, src) => {
+      if (!Array.isArray(dst) || !Array.isArray(src)) return;
+      for (let i = 0; i < dst.length; i++) {
+        if (src[i] && dst[i] && src[i].transform !== undefined) {
+          dst[i].transform = structuredClone(src[i].transform);
+        }
+      }
+    };
+    copy(target.materials, donor.materials);
+    copy(target.overlays, donor.overlays);
+  }
 
   // Wire one appended uniform into the save. Two kinds of slot:
   //
@@ -125,7 +134,7 @@
   //    resolve directly and are left alone.
   //
   // `index` makes the minted names unique across the appended uniforms.
-  function wireUniform(frostbiteData, visuals, uniform, index) {
+  function wireUniform(frostbiteData, visuals, uniform, index, donors) {
     const items = frostbiteData.characterUniformItems;
     const parts = frostbiteData.uniformParts;
     if (!items || typeof items !== 'object') return { registered: [], editable: [] };
@@ -145,12 +154,14 @@
         // Editable team part. Label it from the recipe's own name so each piece is distinct in
         // the editor (they otherwise all show the generic slot name, e.g. "Pants"). Underscores
         // read poorly in-game, so space them out: "COLO_PANTS_2023_WHITE" -> "COLO PANTS 2023 WHITE".
-        // Capture the label BEFORE any base override below so the distinct names survive.
+        // Label from the recipe's own name so each piece is distinct in the editor (they
+        // otherwise all read the generic slot name, e.g. "Pants"). Underscores read poorly
+        // in-game: "COLO_PANTS_2023_WHITE" -> "COLO PANTS 2023 WHITE".
         const label = String(recipe.name || `${kind} ${index + 1}`).replace(/_/g, ' ');
 
-        // Experiment: swap in known-good base fields while keeping this pant's own colors.
-        const override = PART_OVERRIDE[kind];
-        if (override) Object.assign(recipe, override);
+        // The recipe's transforms are zeroed by the decode; restore them from a working donor part
+        // of the same kind already in the save so the fabric maps correctly (no gator scale).
+        borrowTransforms(recipe.layerCompTexture, donors && donors[category]);
 
         const localName = `U_${prefix}_${kind.toUpperCase()}_imp${index}`;
         const partKey = `${prefix}-imp${index}-${kind}`;
@@ -219,13 +230,22 @@
     const appended = structuredClone(armed.uniforms);
     visuals.uniforms = [anchor, ...appended];
 
+    // A donor part per category, captured from the save's ORIGINAL uniformParts before we add any
+    // of ours — used to restore transforms the recipe decode dropped (see borrowTransforms).
+    const donors = {};
+    for (const category of Object.values(UNIFORM_PARTS_CATEGORY)) {
+      const table = frostbiteData.uniformParts && frostbiteData.uniformParts[category];
+      const first = table && Object.values(table)[0];
+      if (first) donors[category] = first.layerCompTexture;
+    }
+
     // Wire only the appended uniforms; the anchor's parts already exist from the original save.
     // Existing entries are left in place — removing definitions is how the player-appearance
     // experiments broke the game.
     const registered = [];
     const editable = [];
     appended.forEach((u, i) => {
-      const r = wireUniform(frostbiteData, visuals, u, i);
+      const r = wireUniform(frostbiteData, visuals, u, i, donors);
       registered.push(...r.registered);
       editable.push(...r.editable);
     });
