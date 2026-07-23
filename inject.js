@@ -100,6 +100,18 @@
   const UNIFORM_PARTS_CATEGORY = { 97: 'pants' };
   const PART_KIND_BY_SLOT = { 97: 'pants' };
 
+  // EXPERIMENT (gator-scale diagnosis): imported pants render with a wrong scaly base texture. The
+  // per-pant color is correct (it lives in layerCompTexture tints, left untouched); the suspects
+  // are the two fields we don't copy verbatim — `name` (ours is a skin name, a real save used a
+  // base-template model) and `materialPreset` (we reconstruct a path from a bare, often-mismatched
+  // name). This forces both to values taken from a save that renders correctly. If the scale
+  // disappears, bisect the two; then replace this with the real per-pant derivation. Null disables.
+  const PANTS_BASE_OVERRIDE = {
+    name: 'ADIDAS_PANTS_WVN_A1',
+    materialPreset: 'content/characters/player/parts/uniforms/pants/presets/FSU_PANTS_2023_WHITE_preset',
+  };
+  const PART_OVERRIDE = { pants: PANTS_BASE_OVERRIDE };
+
   // Wire one appended uniform into the save. Two kinds of slot:
   //
   //  - A slot we have a part recipe for (uniform.parts[kind]) becomes an EDITABLE team part: we
@@ -133,7 +145,13 @@
         // Editable team part. Label it from the recipe's own name so each piece is distinct in
         // the editor (they otherwise all show the generic slot name, e.g. "Pants"). Underscores
         // read poorly in-game, so space them out: "COLO_PANTS_2023_WHITE" -> "COLO PANTS 2023 WHITE".
+        // Capture the label BEFORE any base override below so the distinct names survive.
         const label = String(recipe.name || `${kind} ${index + 1}`).replace(/_/g, ' ');
+
+        // Experiment: swap in known-good base fields while keeping this pant's own colors.
+        const override = PART_OVERRIDE[kind];
+        if (override) Object.assign(recipe, override);
+
         const localName = `U_${prefix}_${kind.toUpperCase()}_imp${index}`;
         const partKey = `${prefix}-imp${index}-${kind}`;
         el.itemAssetName = localName;
