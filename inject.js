@@ -100,25 +100,28 @@
   const UNIFORM_PARTS_CATEGORY = { 97: 'pants' };
   const PART_KIND_BY_SLOT = { 97: 'pants' };
 
-  // The recipe decode zeroes out each material/overlay's `transform` (UV scale, clampUv,
-  // transformRange, scaledTransform all 0/null). A zero UV scale maps the fabric texture wrong —
-  // that's the gator-scale render on imported parts. The data isn't recoverable from the recipe,
-  // but the save already contains the team's own working pants, whose transforms are correct and
-  // are a property of the mesh/UV rather than the color. So we copy the transform, by material and
-  // overlay index, from a donor part of the same kind already in the save. Colors/textures/tints
-  // stay the recipe's.
-  function borrowTransforms(target, donor) {
-    if (!target || !donor) return;
-    const copy = (dst, src) => {
-      if (!Array.isArray(dst) || !Array.isArray(src)) return;
-      for (let i = 0; i < dst.length; i++) {
-        if (src[i] && dst[i] && src[i].transform !== undefined) {
-          dst[i].transform = structuredClone(src[i].transform);
-        }
+  // The recipe decode zeroes some transforms (UV scale 0, clampUv 0, transformRange null). On a
+  // base-fabric MATERIAL a zero UV scale maps the weave wrong — that's the gator-scale render. The
+  // data isn't in the recipe to recover, but a material's UV transform is a property of the mesh,
+  // not the color, so we restore it from a donor part of the same kind already in the save.
+  //
+  // Only broken material transforms are touched. Materials the decode got right keep theirs, and
+  // OVERLAYS are left entirely alone: overlays are per-pant decals (logos, patches) whose size and
+  // placement are specific to that pant, so a donor's overlay transform is the wrong size — copying
+  // it is what made the patches wildly oversized. A recipe overlay with a missing transform just
+  // renders as its own decode left it (a decal may be absent), which is far better than resized.
+  function isBrokenTransform(t) {
+    return !t || (t.scale && t.scale.u === 0 && t.scale.v === 0) || t.transformRange == null;
+  }
+  function restoreMaterialTransforms(target, donor) {
+    const dm = donor && donor.materials;
+    const tm = target && target.materials;
+    if (!Array.isArray(tm) || !Array.isArray(dm)) return;
+    for (let i = 0; i < tm.length; i++) {
+      if (tm[i] && isBrokenTransform(tm[i].transform) && dm[i] && dm[i].transform) {
+        tm[i].transform = structuredClone(dm[i].transform);
       }
-    };
-    copy(target.materials, donor.materials);
-    copy(target.overlays, donor.overlays);
+    }
   }
 
   // Wire one appended uniform into the save. Two kinds of slot:
@@ -159,9 +162,9 @@
         // in-game: "COLO_PANTS_2023_WHITE" -> "COLO PANTS 2023 WHITE".
         const label = String(recipe.name || `${kind} ${index + 1}`).replace(/_/g, ' ');
 
-        // The recipe's transforms are zeroed by the decode; restore them from a working donor part
-        // of the same kind already in the save so the fabric maps correctly (no gator scale).
-        borrowTransforms(recipe.layerCompTexture, donors && donors[category]);
+        // Restore the base-fabric material transforms the decode zeroed, from a working donor part
+        // already in the save, so the fabric maps correctly (no gator scale). Overlays untouched.
+        restoreMaterialTransforms(recipe.layerCompTexture, donors && donors[category]);
 
         const localName = `U_${prefix}_${kind.toUpperCase()}_imp${index}`;
         const partKey = `${prefix}-imp${index}-${kind}`;
