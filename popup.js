@@ -10,6 +10,66 @@
 
 const STORAGE_KEY = 'tcRosterClipboard';
 const UNIFORM_KEY = 'tcUniformClipboard';
+const UPDATE_CACHE_KEY = 'tcReleaseUpdateCache';
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const RELEASES_API = 'https://api.github.com/repos/jtrosclair/teamcrafters-classic-roster-importer/releases/latest';
+const RELEASES_PAGE = 'https://github.com/jtrosclair/teamcrafters-classic-roster-importer/releases/latest';
+
+function parseVersion(version) {
+  const pieces = String(version || '').replace(/^v/i, '').split('.');
+  if (!pieces.length || pieces.some((piece) => !/^\d+$/.test(piece))) return null;
+  return pieces.map(Number);
+}
+
+function isNewerVersion(candidate, current) {
+  const next = parseVersion(candidate);
+  const installed = parseVersion(current);
+  if (!next || !installed) return false;
+  const length = Math.max(next.length, installed.length);
+  for (let i = 0; i < length; i++) {
+    const difference = (next[i] || 0) - (installed[i] || 0);
+    if (difference) return difference > 0;
+  }
+  return false;
+}
+
+function renderUpdate(update) {
+  const card = document.getElementById('updateStatus');
+  if (!update || !update.available) {
+    card.hidden = true;
+    return;
+  }
+  document.getElementById('updateText').textContent = `v${update.version} is ready.`;
+  document.getElementById('updateLink').href = update.url || RELEASES_PAGE;
+  card.hidden = false;
+}
+
+function checkForUpdate() {
+  chrome.storage.local.get(UPDATE_CACHE_KEY, async (result) => {
+    const cached = result[UPDATE_CACHE_KEY];
+    if (cached && Date.now() - cached.checkedAt < UPDATE_CHECK_INTERVAL_MS) {
+      renderUpdate({ ...cached, available: isNewerVersion(cached.version, chrome.runtime.getManifest().version) });
+      return;
+    }
+
+    try {
+      const response = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!response.ok) throw new Error(`Release request failed (${response.status})`);
+      const release = await response.json();
+      const version = String(release.tag_name || '').replace(/^v/i, '');
+      if (!parseVersion(version)) throw new Error('Latest release has no usable version tag');
+      const update = {
+        checkedAt: Date.now(),
+        version,
+        url: release.html_url || RELEASES_PAGE,
+      };
+      await chrome.storage.local.set({ [UPDATE_CACHE_KEY]: update });
+      renderUpdate({ ...update, available: isNewerVersion(version, chrome.runtime.getManifest().version) });
+    } catch {
+      // Offline, rate-limited, or unpublished releases are non-fatal: leave the popup unchanged.
+    }
+  });
+}
 
 function formatCopiedAt(iso) {
   try { return new Date(iso).toLocaleString(); } catch { return iso; }
@@ -71,6 +131,8 @@ chrome.storage.local.get(STORAGE_KEY, (result) => {
 chrome.storage.local.get(UNIFORM_KEY, (result) => {
   renderUniforms(result[UNIFORM_KEY] || null);
 });
+
+checkForUpdate();
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   chrome.storage.local.remove(STORAGE_KEY, () => render(null));

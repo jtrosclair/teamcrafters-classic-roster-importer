@@ -74,8 +74,9 @@
 
   let catalog = null;
   let selectedTeam = null;
-  // { pants: { NORMNAME: recipeEntry } } — bundled part recipes, loaded lazily alongside the
-  // catalog. Missing/failed load is non-fatal: uniforms still import, just without editable parts.
+  // { helmet: {...}, pants: {...}, jersey: {...}, socks: {...} } — bundled part recipes, loaded
+  // lazily alongside the catalog.
+  // Missing/failed loads are non-fatal: uniforms still import, just without editable parts.
   let partRecipes = {};
 
   function renderTeamList(filter) {
@@ -196,12 +197,18 @@
     }
   })();
 
-  // Load the bundled part recipes (currently pants only). Best-effort: if a bundle is missing or
-  // malformed, imports still work — those parts simply won't be editable in-game.
+  // Load bundled part recipes. Best-effort: if a bundle is missing or malformed, imports still
+  // work — that part simply won't be editable in-game. The jersey asset folder/bundle is named
+  // "jerseys", while a uniform's slot and uniform-build.js use the singular key "jersey".
   async function loadPartRecipes() {
-    for (const kind of ['pants']) {
+    for (const { kind, fileKind } of [
+      { kind: 'helmet', fileKind: 'helmets' },
+      { kind: 'pants', fileKind: 'pants' },
+      { kind: 'jersey', fileKind: 'jerseys' },
+      { kind: 'socks', fileKind: 'socks' },
+    ]) {
       try {
-        const res = await fetch(chrome.runtime.getURL(`uniform-recipes-${kind}.json`));
+        const res = await fetch(chrome.runtime.getURL(`uniform-recipes-${fileKind}.json`));
         if (!res.ok) continue;
         const doc = JSON.parse((await res.text()).replace(/^\uFEFF/, ''));
         if (doc && doc.recipes) partRecipes[kind] = doc.recipes;

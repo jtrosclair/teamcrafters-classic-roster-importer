@@ -40,6 +40,23 @@
     color: #5f6b7a;
     line-height: 1.5;
   }
+  .update-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 16px 14px;
+    padding: 9px 10px;
+    border: 1px solid #bcd5f5;
+    border-left: 3px solid #2b7cf0;
+    border-radius: 6px;
+    background: #f4f8ff;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #31465f;
+  }
+  .update-card strong { color: #0f4fb0; white-space: nowrap; }
+  .update-card a { color: #0f4fb0; font-weight: 700; text-decoration: none; margin-left: auto; white-space: nowrap; }
+  .update-card a:hover { text-decoration: underline; }
   button {
     margin-top: 12px;
     width: 100%;
@@ -91,6 +108,11 @@
       <a href="#" id="uniformLink">Choose team uniforms</a> to swap in a real school's set.
     </div>
   </main>
+  <div id="updateStatus" class="update-card" hidden>
+    <strong>Update available</strong>
+    <span id="updateText"></span>
+    <a id="updateLink" href="#" target="_blank" rel="noopener">View release &rarr;</a>
+  </div>
   <footer>
     Built by TeamCrafters. <a href="https://discord.gg/nNBwRh4Rj5" target="_blank" rel="noopener">Join our Discord &rarr;</a><br>
     Not affiliated with or endorsed by EA. Nothing is

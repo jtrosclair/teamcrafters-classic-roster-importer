@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TeamCrafters Classic Roster Importer",
   "short_name": "Classic Roster Importer",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "author": "TeamCrafters",
   "description": "By TeamCrafters. Copy a classic (NCAA14-and-older) TeamCrafters roster, then load it in EA College Football Team Builder as an \"Import from TeamCrafters\" preset.",
   "icons": {
@@ -27,7 +27,8 @@
     "https://www.ea.com/games/ea-sports-college-football/team-builder/*",
     "https://www.teamcrafters.net/app/classic-rosters/*",
     "https://teamcrafters.net/*",
-    "https://www.teamcrafters.net/*"
+    "https://www.teamcrafters.net/*",
+    "https://api.github.com/*"
   ],
   "content_scripts": [
     {

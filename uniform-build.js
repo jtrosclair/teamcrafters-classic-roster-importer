@@ -34,7 +34,7 @@
   // uniform slot -> uniformParts category / recipe kind. Used to attach a part recipe to the
   // matching loadoutElement so inject.js can turn that slot into an editable team part rather than
   // a fixed reference to a prebuilt asset. Only the parts we have recipes bundled for appear here.
-  const RECIPE_KIND_BY_SLOT = { 97: 'pants' };
+  const RECIPE_KIND_BY_SLOT = { 93: 'helmet', 98: 'jersey', 97: 'pants', 94: 'socks' };
 
   // A part recipe is keyed in the bundle by the asset's normalized name: basename, minus a leading
   // "U_", upper-cased. e.g. ".../U_ALA_PANTS_2023_WHITE" -> "ALA_PANTS_2023_WHITE".
@@ -45,8 +45,9 @@
   }
 
   // Attach a save-ready part recipe to each uniform's matching slot, in place. `recipesByKind` is
-  // { pants: { NORMNAME: recipeEntry }, ... }. inject.js reads uniform.parts to build the editable
-  // team part; a slot with no recipe is left as its prebuilt-asset reference. Pure — no I/O.
+  // { helmet: {...}, pants: {...}, jersey: {...}, socks: {...} }. inject.js reads uniform.parts
+  // to build the editable team part; a slot with no recipe is left as its prebuilt-asset reference.
+  // Pure — no I/O.
   function attachPartRecipes(uniforms, recipesByKind) {
     let attached = 0;
     const missing = [];
@@ -144,8 +145,9 @@
   }
 
   // A whole team -> what gets stored and later written into the save. When `recipesByKind` is
-  // supplied ({ pants: {...} }), each uniform's matching slot gets a save-ready part recipe
-  // attached under uniform.parts, which inject.js turns into an editable team part.
+  // supplied ({ helmet: {...}, pants: {...}, jersey: {...}, socks: {...} }), each matching uniform
+  // slot gets a save-ready part recipe attached under uniform.parts, which inject.js turns into an
+  // editable team part.
   function buildUniformSet(teamName, team, recipesByKind) {
     const entries = normalizeUniforms(team);
     if (!entries.length) {

@@ -48,6 +48,10 @@
   const UPLOAD_HOST = 'mcr-prod-268.s3.us-west-2.amazonaws.com';
   const UPLOAD_PATTERN = /nonce-primary\.json/;
 
+  // The initial nonce-primary GET is the team's persisted save. Clean it once per page load so a
+  // newly armed import starts from the original team parts rather than accumulating prior imports.
+  let initialNonceCleanupPending = true;
+
   const AUTO_CONTINUE_SECONDS = 20;
 
   function shouldInterceptUpload(url, method) {
@@ -61,6 +65,62 @@
     } catch {
       return false;
     }
+  }
+
+  function claimInitialNonceCleanup(url, method) {
+    if (!initialNonceCleanupPending || String(method).toUpperCase() !== 'GET') return false;
+    try {
+      const u = new URL(url, location.href);
+      if (!UPLOAD_PATTERN.test(u.pathname)) return false;
+      initialNonceCleanupPending = false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Imported editable parts deliberately have a readable display name; EA's original part
+  // bindings have displayName == ''. Delete every named binding plus its linked part and every
+  // uniform that points at one. Removing all three prevents stale, unresolved uniforms from
+  // surviving into the next import. This is intentionally broad at the user's request: every
+  // non-empty characterUniformItems displayName is treated as an inserted uniform part.
+  function removeInsertedUniforms(payload) {
+    const frostbiteData = payload && payload.teamData && payload.teamData.frostbiteData;
+    const items = frostbiteData && frostbiteData.characterUniformItems;
+    const parts = frostbiteData && frostbiteData.uniformParts;
+    const visuals = frostbiteData && frostbiteData.teamVisuals;
+    if (!items || typeof items !== 'object') return { items: 0, parts: 0, uniforms: 0 };
+
+    const assetNames = new Set();
+    const linkedParts = [];
+    for (const [assetName, item] of Object.entries(items)) {
+      if (!item || !String(item.displayName || '').trim()) continue;
+      assetNames.add(assetName);
+      const category = UNIFORM_PARTS_CATEGORY[item.primarySlot];
+      if (category && item.partItem) linkedParts.push([category, item.partItem]);
+      delete items[assetName];
+    }
+
+    let partCount = 0;
+    for (const [category, partKey] of linkedParts) {
+      const table = parts && parts[category];
+      if (table && Object.prototype.hasOwnProperty.call(table, partKey)) {
+        delete table[partKey];
+        partCount++;
+      }
+    }
+
+    let uniformCount = 0;
+    if (assetNames.size && visuals && Array.isArray(visuals.uniforms)) {
+      const before = visuals.uniforms.length;
+      visuals.uniforms = visuals.uniforms.filter((uniform) => {
+        const elements = uniform && uniform.uniform && uniform.uniform.loadoutElements;
+        return !Array.isArray(elements) || !elements.some((el) => assetNames.has(el.itemAssetName));
+      });
+      uniformCount = before - visuals.uniforms.length;
+    }
+
+    return { items: assetNames.size, parts: partCount, uniforms: uniformCount };
   }
 
   // --- body normalization: EA may hand us a string, Blob, ArrayBuffer, or a typed-array view,
@@ -95,10 +155,10 @@
   // sidesteps that by never registering them.
   const REGISTERED_SLOTS = new Set([93, 98, 97, 94]);
 
-  // uniform slot -> uniformParts category. Only slots we can supply a real part recipe for; a
-  // uniform.parts entry keyed by the singular form ("pants") carries the save-ready recipe.
-  const UNIFORM_PARTS_CATEGORY = { 97: 'pants' };
-  const PART_KIND_BY_SLOT = { 97: 'pants' };
+  // uniform slot -> uniformParts category / recipe key. Categories follow the save's plural
+  // names; uniform.parts uses the singular key from uniform-build.js.
+  const UNIFORM_PARTS_CATEGORY = { 93: 'helmets', 98: 'jerseys', 97: 'pants', 94: 'socks' };
+  const PART_KIND_BY_SLOT = { 93: 'helmet', 98: 'jersey', 97: 'pants', 94: 'socks' };
 
   // The recipe decode zeroes some transforms (UV scale 0, clampUv 0, transformRange null). On a
   // base-fabric MATERIAL a zero UV scale maps the weave wrong — that's the gator-scale render. The
@@ -106,20 +166,44 @@
   // not the color, so we restore it from a donor part of the same kind already in the save.
   //
   // Only broken material transforms are touched. Materials the decode got right keep theirs, and
-  // OVERLAYS are left entirely alone: overlays are per-pant decals (logos, patches) whose size and
-  // placement are specific to that pant, so a donor's overlay transform is the wrong size — copying
-  // it is what made the patches wildly oversized. A recipe overlay with a missing transform just
+  // OVERLAYS are left entirely alone: overlays are per-part decals (logos, patches) whose size and
+  // placement are specific to that part, so a donor's overlay transform is the wrong size — copying
+  // it is what made the pants patches wildly oversized. A recipe overlay with a missing transform just
   // renders as its own decode left it (a decal may be absent), which is far better than resized.
   function isBrokenTransform(t) {
     return !t || (t.scale && t.scale.u === 0 && t.scale.v === 0) || t.transformRange == null;
   }
   function restoreMaterialTransforms(target, donor) {
-    const dm = donor && donor.materials;
+    const dm = donor && donor.layerCompTexture && donor.layerCompTexture.materials;
     const tm = target && target.materials;
     if (!Array.isArray(tm) || !Array.isArray(dm)) return;
     for (let i = 0; i < tm.length; i++) {
       if (tm[i] && isBrokenTransform(tm[i].transform) && dm[i] && dm[i].transform) {
         tm[i].transform = structuredClone(dm[i].transform);
+      }
+    }
+  }
+
+  // The decoded helmet recipe has its own shell/facemask/accessory and layer composition, but
+  // does not include the save-only number and material-settings objects. Reuse those structural
+  // settings from the team's original helmet; do not replace any visual recipe data.
+  function restoreHelmetSettings(target, donor) {
+    if (!target || !donor) return;
+    for (const key of ['number', 'helmetMaterialSettings', 'facemaskMaterialSettings']) {
+      if (target[key] === undefined && donor[key] !== undefined) {
+        target[key] = structuredClone(donor[key]);
+      }
+    }
+  }
+
+  // Sock recipes carry their own layer composition and material preset, but the save also stores
+  // these three part-level settings. They are structural rather than cosmetic, so retain the
+  // values from the team's original socks when the decoded recipe omits them.
+  function restoreSockSettings(target, donor) {
+    if (!target || !donor) return;
+    for (const key of ['outerSock', 'sockAdjust', 'underSockColor']) {
+      if (target[key] === undefined && donor[key] !== undefined) {
+        target[key] = structuredClone(donor[key]);
       }
     }
   }
@@ -132,9 +216,9 @@
   //    (how EA marks a user-authored part, vs 254 for a stock one), and drop the recipe into
   //    uniformParts under that key. This is what makes the piece swappable in the editor.
   //
-  //  - Any other bound slot (93/98/94 for now) keeps its prebuilt-asset reference and just gets a
-  //    minimal characterUniformItems entry so the name resolves. Shared assets (shoes) already
-  //    resolve directly and are left alone.
+  //  - Any other bound slot keeps its prebuilt-asset reference and just gets a minimal
+  //    characterUniformItems entry so the name resolves. Shared assets (shoes) already resolve
+  //    directly and are left alone.
   //
   // `index` makes the minted names unique across the appended uniforms.
   function wireUniform(frostbiteData, visuals, uniform, index, donors) {
@@ -161,6 +245,9 @@
         // otherwise all read the generic slot name, e.g. "Pants"). Underscores read poorly
         // in-game: "COLO_PANTS_2023_WHITE" -> "COLO PANTS 2023 WHITE".
         const label = String(recipe.name || `${kind} ${index + 1}`).replace(/_/g, ' ');
+
+        if (kind === 'helmet') restoreHelmetSettings(recipe, donors && donors[category]);
+        if (kind === 'socks') restoreSockSettings(recipe, donors && donors[category]);
 
         // Restore the base-fabric material transforms the decode zeroed, from a working donor part
         // already in the save, so the fabric maps correctly (no gator scale). Overlays untouched.
@@ -234,12 +321,12 @@
     visuals.uniforms = [anchor, ...appended];
 
     // A donor part per category, captured from the save's ORIGINAL uniformParts before we add any
-    // of ours — used to restore transforms the recipe decode dropped (see borrowTransforms).
+    // of ours — used to restore material transforms the recipe decode dropped.
     const donors = {};
     for (const category of Object.values(UNIFORM_PARTS_CATEGORY)) {
       const table = frostbiteData.uniformParts && frostbiteData.uniformParts[category];
       const first = table && Object.values(table)[0];
-      if (first) donors[category] = first.layerCompTexture;
+      if (first) donors[category] = first;
     }
 
     // Wire only the appended uniforms; the anchor's parts already exist from the original save.
@@ -428,6 +515,21 @@
     const url = typeof input === 'string' ? input : input && input.url;
     const method = (init && init.method) || (typeof input !== 'string' && input && input.method) || 'GET';
 
+    // First load of the persisted team save: return a cleaned copy before Team Builder reads it.
+    // If this response cannot be parsed, pass the original through and allow a later GET to retry.
+    if (claimInitialNonceCleanup(url, method)) {
+      const real = await nativeFetch(input, init);
+      try {
+        const payload = await real.clone().json();
+        const removed = removeInsertedUniforms(payload);
+        if (removed.items) console.info('[TeamCrafters] removed prior imported uniform parts:', removed);
+        return jsonResponse(JSON.stringify(payload));
+      } catch {
+        initialNonceCleanupPending = true;
+        return real;
+      }
+    }
+
     // Save upload — with a uniform set armed, hold it, offer the swap, then send what was chosen.
     // Nothing armed means the save is never touched.
     if (shouldInterceptUpload(url, method)) {
@@ -521,6 +623,23 @@
   XMLHttpRequest.prototype.send = function (body) {
     const xhr = this;
     const info = xhr._tcInfo;
+
+    // Primary XHR path for the initial team save. Refetch and synthesize its cleaned JSON; on a
+    // network/parse failure, send the original request untouched and retry cleanup on a later GET.
+    if (info && claimInitialNonceCleanup(info.url, info.method)) {
+      nativeFetch(info.url)
+        .then((response) => response.json())
+        .then((payload) => {
+          const removed = removeInsertedUniforms(payload);
+          if (removed.items) console.info('[TeamCrafters] removed prior imported uniform parts:', removed);
+          synthesize(xhr, info.url, JSON.stringify(payload));
+        })
+        .catch(() => {
+          initialNonceCleanupPending = true;
+          origSend.call(xhr, body);
+        });
+      return;
+    }
 
     // Save upload (this is the path EA actually uses). With a uniform set armed, hold the
     // synchronous send, ask, then send the chosen body. Nothing armed means the save goes through

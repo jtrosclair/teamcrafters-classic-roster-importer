@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.2
+
+### Highlights
+
+- Make helmets, jerseys, pants, and socks editable for imported CFB 27 uniforms.
+- Remove previously inserted named uniform parts when Team Builder first loads `nonce-primary.json`,
+  preventing old imported uniforms from accumulating before the next import.
+- Preserve helmet and sock settings that are not present in decoded recipes by reusing the team's
+  original matching part settings.
+- Fix decoded `contentShared/...` CID-mask paths so affected jerseys retain their materials and
+  colors; this fixes Colorado's 2023 black and white alternate jerseys.
+- Add an update notifier in the popup. It checks GitHub Releases while the popup is open and links
+  to a newer release when one is available; installation remains manual.
+
+### Known recipe gaps
+
+- `PUR_PANTS_2024_GOLD` and `NIKE_SOCKS_2023_WHITE` have no decoded source recipe. They remain
+  normal prebuilt assets rather than incomplete editable parts.
+
 ## v0.3.0
 
 ### Highlights
