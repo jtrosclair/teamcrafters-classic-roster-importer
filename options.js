@@ -8,12 +8,39 @@
 // You should have received a copy of the license along with this program (see LICENSE);
 // if not, see <https://www.gnu.org/licenses/>.
 
-// options.js — the CSV import page. Parses the user's CSV into the same normalized shape the
-// TeamCrafters export returns, runs it through the identical merge, and stores the result so
-// inject.js can serve it as a Team Builder preset.
+// options.js — the options page. It hosts the uniform picker and CSV importer, which both store
+// their prepared data so inject.js can serve it as a Team Builder preset or save-time update.
 (function () {
   const STORAGE_KEY = 'tcRosterClipboard';
   const UNIFORM_KEY = 'tcUniformClipboard';
+
+  // --- tabs ------------------------------------------------------------------------------
+  // Two independent tools live on this page — the uniform picker and the CSV importer — and each
+  // is a lot of information, so only one panel shows at a time. The popup links here with a
+  // #panel-… hash to open the right one; default is uniforms. Keep the state in the URL so popup
+  // links can open the appropriate tool and browser back/forward navigation remains intuitive.
+  const tabs = [...document.querySelectorAll('.tab')];
+  function showTab(panelId) {
+    const valid = tabs.some((t) => t.dataset.panel === panelId);
+    const target = valid ? panelId : 'panel-uniforms';
+    for (const tab of tabs) {
+      const on = tab.dataset.panel === target;
+      tab.classList.toggle('active', on);
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      const panel = document.getElementById(tab.dataset.panel);
+      panel.classList.toggle('active', on);
+      panel.hidden = !on;
+    }
+  }
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => {
+      showTab(tab.dataset.panel);
+      history.pushState(null, '', '#' + tab.dataset.panel);
+    });
+  }
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+  showTab(location.hash.slice(1));
 
   const fileInput = document.getElementById('csvFile');
   const teamInput = document.getElementById('teamName');
@@ -147,7 +174,12 @@
 
   (async function initUniforms() {
     try {
-      catalog = await fetch(chrome.runtime.getURL('uniform-catalog.json')).then((r) => r.json());
+      const response = await fetch(chrome.runtime.getURL('uniform-catalog.json'));
+      if (!response.ok) throw new Error(`Catalog request failed (${response.status}).`);
+      // JSON.parse rejects a UTF-8 BOM. Accept it because catalog exports from Windows tools
+      // commonly include one, then normalize the current and legacy catalog schemas.
+      const text = await response.text();
+      catalog = window.TCUniformBuild.normalizeCatalog(JSON.parse(text.replace(/^\uFEFF/, '')));
       uniSearch.placeholder = `Search ${catalog.teamCount} teams…`;
       renderTeamList('');
       const stored = await chrome.storage.local.get(UNIFORM_KEY);

@@ -80,12 +80,18 @@ document.getElementById('clearUniformBtn').addEventListener('click', () => {
   chrome.storage.local.remove(UNIFORM_KEY, () => renderUniforms(null));
 });
 
+// Open the options page on a specific tab. openOptionsPage() can't carry a hash, so target the
+// panel directly; the options page reads the hash to pick which tool to show.
+function openOptions(panelId) {
+  chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${panelId}`) });
+}
+
 document.getElementById('csvLink').addEventListener('click', (e) => {
   e.preventDefault();
-  chrome.runtime.openOptionsPage();
+  openOptions('panel-csv');
 });
 
 document.getElementById('uniformLink').addEventListener('click', (e) => {
   e.preventDefault();
-  chrome.runtime.openOptionsPage();
+  openOptions('panel-uniforms');
 });

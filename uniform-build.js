@@ -37,6 +37,52 @@
   // fixed slots. Observed in a save with three user-made uniforms alongside the stock Home/Away.
   const ALTERNATE_LOADOUT_TYPE = 8;
 
+  // Catalog generators have used two shapes over time: the original one stored uniforms in an
+  // array with EA's numeric enum values, while the current generator stores them in an object
+  // keyed by asset name and preserves Frosty's enum names. Normalize at the boundary so the rest
+  // of the picker always works with the payload-ready shape.
+  const LOADOUT_TYPES = {
+    LoadoutType_TeamDark: 6,
+    LoadoutType_TeamLight: 3,
+  };
+  const LOADOUT_CATEGORIES = {
+    LoadoutCategory_UniformOnly: 1,
+  };
+
+  function enumValue(value, values, label) {
+    if (Number.isInteger(value)) return value;
+    if (Object.prototype.hasOwnProperty.call(values, value)) return values[value];
+    throw new Error(`Unsupported ${label}: ${String(value)}.`);
+  }
+
+  function normalizeUniforms(team) {
+    if (!team || !team.uniforms) return [];
+    const source = Array.isArray(team.uniforms) ? team.uniforms : Object.values(team.uniforms);
+    return source.map((entry) => ({
+      ...entry,
+      loadoutType: enumValue(entry.loadoutType, LOADOUT_TYPES, 'loadout type'),
+      loadoutCategory: enumValue(entry.loadoutCategory, LOADOUT_CATEGORIES, 'loadout category'),
+    }));
+  }
+
+  function normalizeCatalog(catalog) {
+    if (!catalog || !catalog.teams || typeof catalog.teams !== 'object') {
+      throw new Error('The uniform catalog does not contain any teams.');
+    }
+    for (const [teamName, team] of Object.entries(catalog.teams)) {
+      const uniforms = normalizeUniforms(team);
+      if (!uniforms.length) throw new Error(`No uniforms found for ${teamName}.`);
+      for (const uniform of uniforms) {
+        if (!uniform.paths || SLOTS.some(({ part }) => !uniform.paths[part])) {
+          throw new Error(`Uniform "${uniform.displayName || 'unnamed'}" for ${teamName} is missing an item path.`);
+        }
+      }
+      team.uniforms = uniforms;
+    }
+    catalog.teamCount = Object.keys(catalog.teams).length;
+    return catalog;
+  }
+
   // One catalog uniform -> one teamVisuals.uniforms entry.
   //
   // paths are used verbatim rather than rebuilt from a prefix: the shoe root genuinely varies per
@@ -63,10 +109,11 @@
 
   // A whole team -> what gets stored and later written into the save.
   function buildUniformSet(teamName, team) {
-    if (!team || !Array.isArray(team.uniforms) || !team.uniforms.length) {
+    const entries = normalizeUniforms(team);
+    if (!entries.length) {
       throw new Error(`No uniforms found for ${teamName}.`);
     }
-    const uniforms = team.uniforms.map(toPayloadUniform);
+    const uniforms = entries.map(toPayloadUniform);
 
     // Count the assets that will need a characterUniformItems entry, so the picker can say how
     // many up front. Must mirror REGISTERED_SLOTS in inject.js: only the four slots EA itself
@@ -91,5 +138,5 @@
     };
   }
 
-  window.TCUniformBuild = { buildUniformSet, toPayloadUniform, SLOTS };
+  window.TCUniformBuild = { buildUniformSet, normalizeCatalog, normalizeUniforms, toPayloadUniform, SLOTS };
 })();

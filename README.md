@@ -92,14 +92,16 @@ Either way the file always downloads, and the button tells you exactly what to f
 
 ## Or swap in a real school's uniforms
 
-The extension bundles every uniform from CFB 27 — 136 schools, 1127 uniforms, pulled from the game's own files.
+The extension bundles 1,167 CFB 27 uniforms across 150 selectable groups, pulled from the game's own files.
 
 1. Click the extension's toolbar icon and choose **"Choose team uniforms"**.
 2. Search for a school and pick it. You'll see every uniform it has, with dark/light and current-home/away marked.
 3. Click **Use these uniforms**.
 4. Open your team in Team Builder and hit **Save**. You'll be asked to confirm before anything is uploaded — nothing is changed unless you say yes.
 
-This replaces *all* of your team's uniforms with that school's set, so a team with 2 uniforms picking Colorado ends up with 23. Your roster, logos, and stadium are untouched.
+This adds that school's full set to your team. Team Builder keeps one original uniform as an
+unused technical anchor, then makes every selected school uniform available; your roster, logos,
+and stadium are untouched.
 
 The confirmation appears on every save while a team is selected. Clear it from the toolbar popup when you're done.
 
@@ -166,13 +168,13 @@ closure-bound and effectively unreachable in the production build). It:
 | `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
 | `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
-| `options.html` / `options.js` | — | — | CSV import page (file picker, validation, sample download) |
+| `options.html` / `options.js` | — | — | Tabbed uniform picker and CSV importer (file picker, validation, sample download) |
 | `csv-import.js` | isolated | classic-roster pages | CSV parsing + mapping into the normalized roster shape; owns the column schema and roster rules |
 | `csv-export.js` | isolated | classic-roster pages | The reverse — normalized roster to CSV, reusing `csv-import.js`'s tables so the two can't drift |
 | `cfb27-position-ovr-calculator.js` | — | — | Archetype-weighted OVR calculation (options page only) |
 | `sample-roster.csv` | — | — | Complete 85-player sample, generated from the base template |
 | `uniform-build.js` | — | — | Converts catalog uniforms into EA's payload shape (options page only) |
-| `uniform-catalog.json` | — | — | 136 schools / 1127 uniforms decoded from CFB 27 |
+| `uniform-catalog.json` | — | — | 150 selectable groups / 1,167 uniforms decoded from CFB 27 |
 | `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
 | `reference/` | — | — | EA head catalog + sample team payload, reference only |
 

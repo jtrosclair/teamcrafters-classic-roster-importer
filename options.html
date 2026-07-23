@@ -16,7 +16,21 @@
   }
   header img { width: 32px; height: 32px; border-radius: 7px; }
   header h1 { font-size: 17px; margin: 0; }
-  main { max-width: 720px; margin: 24px auto; padding: 0 20px; }
+  .tabs {
+    display: flex; gap: 4px; max-width: 720px; margin: 20px auto 0; padding: 0 20px;
+    border-bottom: 1px solid #e2e5ea;
+  }
+  .tab {
+    background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0;
+    padding: 10px 14px; margin-bottom: -1px; font-size: 13px; font-weight: 600; color: #5f6b7a;
+    cursor: pointer; white-space: nowrap;
+  }
+  .tab:hover { background: none; color: #1b1f24; }
+  .tab.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+  .tab:focus-visible { outline: 2px solid #1a73e8; outline-offset: -3px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  main { max-width: 720px; margin: 16px auto 0; padding: 0 20px; }
   .card {
     background: #fff; border: 1px solid #e2e5ea; border-radius: 10px;
     padding: 18px 20px; margin-bottom: 16px;
@@ -84,12 +98,18 @@
     <h1>Roster &amp; uniforms</h1>
   </header>
 
+  <nav class="tabs" aria-label="Tools" role="tablist">
+    <button class="tab" id="tab-uniforms" role="tab" aria-controls="panel-uniforms" aria-selected="false" data-panel="panel-uniforms">Team uniforms</button>
+    <button class="tab" id="tab-csv" role="tab" aria-controls="panel-csv" aria-selected="false" data-panel="panel-csv">Import roster (CSV)</button>
+  </nav>
+
   <main>
+    <section id="panel-uniforms" class="panel" role="tabpanel" aria-labelledby="tab-uniforms">
     <div class="card" id="uniformCard">
       <h2>Team uniforms</h2>
       <p class="sub">
-        Replace your team's uniforms with a real school's full set. Pick a team here, then save your
-        team in Team Builder &mdash; you'll be asked to confirm before anything is uploaded.
+        Add a real school's uniform set to your team. Pick a team here, then save your team in
+        Team Builder &mdash; you'll be asked to confirm before anything is uploaded.
       </p>
 
       <div id="uniformArmed" class="result ok" style="display:none;"></div>
@@ -105,7 +125,9 @@
       </div>
       <button id="clearUniformsBtn" class="secondary" style="display:none;">Clear</button>
     </div>
+    </section>
 
+    <section id="panel-csv" class="panel" role="tabpanel" aria-labelledby="tab-csv">
     <div class="card">
       <h2>1. Start from the sample</h2>
       <p class="sub">
@@ -191,6 +213,7 @@
         </p>
       </details>
     </div>
+    </section>
   </main>
 
   <script src="roster-merge.js"></script>
