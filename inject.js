@@ -130,12 +130,17 @@
       const category = UNIFORM_PARTS_CATEGORY[el.slotType];
 
       if (recipe && category && parts && parts[category]) {
-        // Editable team part.
+        // Editable team part. Label it from the recipe's own name so each piece is distinct in
+        // the editor (they otherwise all show the generic slot name, e.g. "Pants"). Underscores
+        // read poorly in-game, so space them out: "COLO_PANTS_2023_WHITE" -> "COLO PANTS 2023 WHITE".
+        const label = String(recipe.name || `${kind} ${index + 1}`).replace(/_/g, ' ');
         const localName = `U_${prefix}_${kind.toUpperCase()}_imp${index}`;
         const partKey = `${prefix}-imp${index}-${kind}`;
         el.itemAssetName = localName;
+        el.itemDisplayName = label;
         items[localName] = {
           assetName: localName,
+          displayName: label,
           primarySlot: el.slotType,
           secondarySlot: el.slotType,
           partItem: partKey,
