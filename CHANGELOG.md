@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.0
+
+### Highlights
+
+- Raise the Team Builder uniform-draft limit to 10 uniforms.
+- Keep an **Add Uniform** control available after EA hides its native control at five uniforms.
+- Name a new uniform before creating it, then choose it from the list when ready to edit.
+- Make longer uniform lists horizontally scrollable.
+
 ## v0.3.2
 
 ### Highlights

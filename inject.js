@@ -54,6 +54,345 @@
 
   const AUTO_CONTINUE_SECONDS = 20;
 
+  const configuredUniformLimit = window.TeamCraftersUniformConfig?.maxUniforms;
+  const MAX_UNIFORMS =
+    Number.isInteger(configuredUniformLimit) && configuredUniformLimit > 0
+      ? configuredUniformLimit
+      : 10;
+
+  const UNIFORM_CREATE_BUTTON_SELECTOR =
+    'app-uniforms-selection button[aria-label="Create new team"]';
+  const TEAMCRAFTERS_CREATE_TILE = 'data-teamcrafters-create-uniform';
+  const TEAMCRAFTERS_CREATE_DIALOG = 'data-teamcrafters-create-uniform-dialog';
+  const TEAMCRAFTERS_UNIFORM_SCROLL_STYLE = 'teamcrafters-uniform-scroll-style';
+  const UNIFORM_ROW_SELECTOR =
+    'app-uniforms-selection .canvas-container > div.flex.w-100.justify-center';
+  const uniformSelectionCandidates = [];
+
+  function trackUniformSelectionCandidate(candidate) {
+    if (candidate && !uniformSelectionCandidates.includes(candidate)) {
+      uniformSelectionCandidates.push(candidate);
+    }
+  }
+
+  function captureComponentField(field) {
+    const inherited = Object.getOwnPropertyDescriptor(Object.prototype, field);
+    if (inherited && !inherited.set?.__teamcraftersUniformComponentCapture) return;
+
+    const get = inherited?.get;
+    const set = inherited?.set;
+    const capture = function (value) {
+      trackUniformSelectionCandidate(this);
+      if (set) {
+        set.call(this, value);
+        return;
+      }
+      Object.defineProperty(this, field, {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value,
+      });
+    };
+    Object.defineProperty(capture, '__teamcraftersUniformComponentCapture', { value: true });
+    Object.defineProperty(Object.prototype, field, {
+      configurable: true,
+      enumerable: inherited?.enumerable ?? false,
+      get,
+      set: capture,
+    });
+  }
+
+  try {
+    captureComponentField('teamBuilderService');
+    captureComponentField('isBottomPopup');
+  } catch {
+    // The regular captured native listener remains available on browsers that prevent this hook.
+  }
+
+  try {
+    const nativeDefineProperty = Object.defineProperty;
+    if (!nativeDefineProperty.__teamcraftersUniformComponentCapture) {
+      const wrappedDefineProperty = function (target, property, descriptor) {
+        if (property === 'teamBuilderService' && descriptor && 'value' in descriptor) {
+          trackUniformSelectionCandidate(target);
+        }
+        return nativeDefineProperty.call(Object, target, property, descriptor);
+      };
+      Object.defineProperty(wrappedDefineProperty, '__teamcraftersUniformComponentCapture', {
+        value: true,
+      });
+      Object.defineProperty = wrappedDefineProperty;
+    }
+  } catch {
+    // The assignment capture above covers the normal Angular output.
+  }
+
+  function getUniformSelectionComponent() {
+    for (let index = uniformSelectionCandidates.length - 1; index >= 0; index--) {
+      const component = uniformSelectionCandidates[index];
+      if (
+        component &&
+        component.teamBuilderService &&
+        component.route &&
+        component.router &&
+        component.popupService &&
+        component.dataStoreService &&
+        Array.isArray(component.uniforms) &&
+        Array.isArray(component.duplicateLoadOutOptions) &&
+        typeof component.createClicked === 'function'
+      ) {
+        return component;
+      }
+    }
+    return null;
+  }
+
+  function getUniformCount(component = getUniformSelectionComponent()) {
+    const uniformDataService =
+      component?.teamBuilderService?.teamBuilderService?.getTeamUniformDataService?.();
+    const loadOutOptions = uniformDataService?.getLoadOutOptions?.();
+    if (Array.isArray(loadOutOptions)) return loadOutOptions.length;
+    if (Array.isArray(component?.uniforms)) return component.uniforms.length;
+    return document.querySelectorAll(
+      'app-uniforms-selection .uniform-item:not([data-teamcrafters-create-uniform])'
+    ).length;
+  }
+
+  function ensureUniformListScrollStyles() {
+    if (document.getElementById(TEAMCRAFTERS_UNIFORM_SCROLL_STYLE)) return;
+    const style = document.createElement('style');
+    style.id = TEAMCRAFTERS_UNIFORM_SCROLL_STYLE;
+    style.textContent = `
+      ${UNIFORM_ROW_SELECTOR} {
+        justify-content: flex-start !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding-bottom: 14px !important;
+      }
+      ${UNIFORM_ROW_SELECTOR} > .uniform-item {
+        flex: 0 0 auto !important;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function requestFallbackUniformCreate() {
+    if (document.querySelector(`[${TEAMCRAFTERS_CREATE_DIALOG}]`)) return;
+    if (getUniformCount() >= MAX_UNIFORMS) return;
+
+    const overlay = document.createElement('div');
+    overlay.setAttribute(TEAMCRAFTERS_CREATE_DIALOG, '');
+    overlay.setAttribute('role', 'presentation');
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483647',
+      display: 'grid',
+      placeItems: 'center',
+      padding: '24px',
+      background: 'rgba(0, 0, 0, 0.72)',
+    });
+
+    const dialog = document.createElement('form');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'teamcrafters-uniform-title');
+    Object.assign(dialog.style, {
+      width: 'min(100%, 430px)',
+      padding: '28px',
+      border: '1px solid rgba(255, 255, 255, 0.22)',
+      borderRadius: '6px',
+      color: '#fff',
+      background: '#1c1c1c',
+      boxShadow: '0 24px 72px rgba(0, 0, 0, 0.55)',
+      fontFamily: 'inherit',
+    });
+    const title = document.createElement('h2');
+    title.id = 'teamcrafters-uniform-title';
+    title.textContent = 'Name your new uniform';
+    Object.assign(title.style, { margin: '0 0 10px', fontSize: '24px', lineHeight: '1.2' });
+    const detail = document.createElement('p');
+    detail.textContent = 'You can change its parts in EA’s uniform editor next.';
+    Object.assign(detail.style, { margin: '0 0 20px', color: '#c7c7c7', lineHeight: '1.45' });
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'uniformName';
+    input.maxLength = 30;
+    input.required = true;
+    input.autocomplete = 'off';
+    input.placeholder = 'Uniform name';
+    input.setAttribute('aria-label', 'Uniform name');
+    Object.assign(input.style, {
+      boxSizing: 'border-box',
+      width: '100%',
+      minHeight: '46px',
+      padding: '10px 12px',
+      border: '1px solid #777',
+      borderRadius: '3px',
+      color: '#fff',
+      background: '#303030',
+      font: 'inherit',
+    });
+    const error = document.createElement('div');
+    error.setAttribute('role', 'alert');
+    Object.assign(error.style, {
+      minHeight: '20px',
+      marginTop: '7px',
+      color: '#ff8f8f',
+      fontSize: '13px',
+    });
+    const actions = document.createElement('div');
+    Object.assign(actions.style, {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: '12px',
+      marginTop: '24px',
+    });
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = 'Cancel';
+    Object.assign(cancel.style, {
+      minHeight: '40px',
+      padding: '0 17px',
+      border: '0',
+      color: '#fff',
+      background: 'transparent',
+      font: 'inherit',
+      cursor: 'pointer',
+    });
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.textContent = 'Create uniform';
+    Object.assign(submit.style, {
+      minHeight: '40px',
+      padding: '0 17px',
+      border: '0',
+      borderRadius: '3px',
+      color: '#111',
+      background: '#ffde00',
+      font: '600 14px inherit',
+      cursor: 'pointer',
+    });
+
+    cancel.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) overlay.remove();
+    });
+    dialog.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = input.value.trim();
+      if (!name) {
+        error.textContent = 'Enter a name for the uniform.';
+        input.focus();
+        return;
+      }
+      const component = getUniformSelectionComponent();
+      const uniformDataService =
+        component?.teamBuilderService?.teamBuilderService?.getTeamUniformDataService?.();
+      if (!component || !uniformDataService || typeof uniformDataService.createLoadout !== 'function') {
+        error.textContent = 'Team Builder is still loading. Close this dialog, wait a moment, and try again.';
+        return;
+      }
+      try {
+        const beforeCount = uniformDataService.getLoadOutOptions?.().length ?? component.uniforms.length;
+        if (beforeCount >= MAX_UNIFORMS) {
+          error.textContent = `This extension is limited to ${MAX_UNIFORMS} uniforms.`;
+          return;
+        }
+        const accepted = uniformDataService.createLoadout(name, 'Blank');
+        const afterCount = uniformDataService.getLoadOutOptions?.().length ?? beforeCount;
+        if (accepted === false || afterCount <= beforeCount) {
+          throw new Error('Team Builder rejected the new uniform.');
+        }
+        if (typeof component.getUniforms === 'function') {
+          component.getUniforms();
+        } else {
+          component.uniforms = uniformDataService.getLoadOutOptions?.() ?? component.uniforms;
+        }
+        overlay.remove();
+        queueUnlimitedUniformCreateSync();
+      } catch {
+        error.textContent = 'Team Builder could not create that uniform. Please refresh and try again.';
+      }
+    });
+    actions.append(cancel, submit);
+    dialog.append(title, detail, input, error, actions);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    queueMicrotask(() => input.focus());
+  }
+
+  function makeUniformCreateTile() {
+    const tile = document.createElement('div');
+    tile.className = 'uniform-item w-100 lg-row-gap-6 row-gap-4 flex flex-col justify-center align-center';
+    tile.setAttribute(TEAMCRAFTERS_CREATE_TILE, '');
+
+    const media = document.createElement('div');
+    media.className = 'uniform-media flex flex-col justify-center align-center relative';
+    const image = document.createElement('img');
+    image.src = 'assets/images/PlayerModelBlank.png';
+    image.alt = 'new uniform';
+    image.className = 'media-img aspect-auto';
+    const createMark = document.createElement('div');
+    createMark.className = 'uniform-create relative';
+    media.append(image, createMark);
+
+    const actions = document.createElement('div');
+    actions.className = 'flex justify-center align-center';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tab-button relative';
+    button.setAttribute('aria-label', 'Create new uniform');
+    const icon = document.createElement('span');
+    icon.className = 'eaicon eaiconadd c-text-4';
+    button.appendChild(icon);
+    button.addEventListener('click', requestFallbackUniformCreate);
+    actions.appendChild(button);
+    tile.append(media, actions);
+    return tile;
+  }
+
+  function syncUnlimitedUniformCreateControl() {
+    ensureUniformListScrollStyles();
+    const nativeButton = document.querySelector(UNIFORM_CREATE_BUTTON_SELECTOR);
+    const replacement = document.querySelector(`[${TEAMCRAFTERS_CREATE_TILE}]`);
+    const nativeTile = nativeButton?.closest('.uniform-item');
+
+    if (getUniformCount() >= MAX_UNIFORMS) {
+      replacement?.remove();
+      nativeTile?.style.setProperty('display', 'none', 'important');
+      return;
+    }
+    nativeTile?.style.removeProperty('display');
+    if (nativeButton) {
+      replacement?.remove();
+      return;
+    }
+    if (replacement) return;
+
+    const uniformList = document.querySelector(UNIFORM_ROW_SELECTOR);
+    if (!uniformList) return;
+    uniformList.insertBefore(makeUniformCreateTile(), uniformList.firstChild);
+  }
+
+  let uniformCreateSyncQueued = false;
+  function queueUnlimitedUniformCreateSync() {
+    if (uniformCreateSyncQueued) return;
+    uniformCreateSyncQueued = true;
+    queueMicrotask(() => {
+      uniformCreateSyncQueued = false;
+      syncUnlimitedUniformCreateControl();
+    });
+  }
+
+  new MutationObserver(queueUnlimitedUniformCreateSync).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+  queueUnlimitedUniformCreateSync();
+
   function shouldInterceptUpload(url, method) {
     try {
       const u = new URL(url, location.href);
