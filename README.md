@@ -10,6 +10,9 @@ Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Elec
 > It works by reading and adjusting the data Team Builder already loads, so an EA update can
 > break it. If it stops working, please [open an issue](../../issues).
 
+> [!WARNING]
+> Use this tool carefully and entirely at your own risk. TeamCrafters is not responsible for team data being overwritten, lost, or otherwise changed. EA can patch or update Team Builder at any moment, which may break this extension or change its behavior. Back up anything important before using it. You have been warned.
+
 ---
 
 # For users
