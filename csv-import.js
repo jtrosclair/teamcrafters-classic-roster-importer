@@ -34,8 +34,9 @@
     SR: 3, 'SENIOR': 3,
   };
 
-  // Skin tone (0-7) -> PLYR_PORTRAIT. roster-merge.js pairs each portrait with its head recipe
-  // and complexion, so this is the only appearance value the CSV needs to carry.
+  // Skin tone (0-7) -> PLYR_PORTRAIT. A CSV may instead provide an exact portraitId; that wins
+  // over this fallback. roster-merge.js pairs every accepted portrait with its head recipe and
+  // complexion from the bundled EA catalog.
   const PORTRAIT_ID_BY_SKIN_TONE = {
     0: '7', 1: '7', 2: '3157', 3: '3087', 4: '3163', 5: '3163', 6: '3163', 7: '3157',
   };
@@ -167,7 +168,10 @@
   }
 
   // --- CSV rows -> normalized roster ------------------------------------------------------
-  function buildClipboardFromCsv(text, teamName) {
+  // portraitCatalog is optional for callers that only need to parse the shared roster shape. The
+  // actual CSV UI always supplies it, which lets us reject an unknown portraitId at the row where
+  // it appears instead of producing a roster whose visuals cannot be resolved later.
+  function buildClipboardFromCsv(text, teamName, portraitCatalog) {
     const { headers, rows } = parseCsv(text);
     const errors = [];
     const warnings = [];
@@ -236,9 +240,32 @@
       if (schoolYearCode === undefined) schoolYearCode = 0;
 
       const skin = num(r.skinTone);
-      const portraitId = skin != null ? PORTRAIT_ID_BY_SKIN_TONE[skin] ?? null : null;
-      if (skin != null && portraitId == null) {
+      const fallbackPortraitId = skin != null ? PORTRAIT_ID_BY_SKIN_TONE[skin] ?? null : null;
+      if (skin != null && fallbackPortraitId == null) {
         warnings.push(`Row ${line} (${first} ${last}): skinTone "${r.skinTone}" is outside 0-7, left unchanged.`);
+      }
+
+      // A source Team Builder roster already knows the exact EA portrait to use. Preserve it
+      // verbatim (apart from harmless leading zeroes) so it takes precedence over skinTone.
+      const portraitRaw = String(r.portraitId ?? '').trim();
+      let portraitId = fallbackPortraitId;
+      if (portraitRaw) {
+        if (!/^\d+$/.test(portraitRaw)) {
+          if (errors.length < MAX_COLLECTED_ERRORS) {
+            errors.push(`Row ${line} (${first} ${last}): portraitId "${r.portraitId}" must be a whole-number EA portrait ID.`);
+          }
+        } else {
+          portraitId = String(Number(portraitRaw));
+          if (!Number.isSafeInteger(Number(portraitRaw))) {
+            if (errors.length < MAX_COLLECTED_ERRORS) {
+              errors.push(`Row ${line} (${first} ${last}): portraitId "${r.portraitId}" is too large to be an EA portrait ID.`);
+            }
+          } else if (portraitCatalog && !portraitCatalog[portraitId]) {
+            if (errors.length < MAX_COLLECTED_ERRORS) {
+              errors.push(`Row ${line} (${first} ${last}): portraitId "${r.portraitId}" isn't in the EA portrait catalog.`);
+            }
+          }
+        }
       }
 
       const weight = num(r.weightLbs);

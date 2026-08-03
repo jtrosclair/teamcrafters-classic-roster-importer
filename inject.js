@@ -24,9 +24,9 @@
 // The sentinel URLs are fake EA-CDN-looking URLs (carrying a "_teamcrafters.json" marker) that
 // only exist in our injected preset, so we answer them locally instead of hitting the network.
 //
-// The roster/visuals data itself is built at copy time on teamcrafters.net and lives in
-// chrome.storage.local; ea-bridge.js (ISOLATED world) relays it here, since MAIN world has no
-// chrome.* APIs.
+// The roster/visuals data itself is built at copy time on teamcrafters.net (or copied from an EA
+// Team Builder preview) and lives in chrome.storage.local; ea-bridge.js (ISOLATED world) relays
+// it here, since MAIN world has no chrome.* APIs.
 //
 // It ALSO intercepts one upload (see "uniform replacement" below) — the only place this extension
 // changes what gets written to EA rather than what gets read from it.
@@ -47,6 +47,15 @@
   // armed the request isn't touched at all.
   const UPLOAD_HOST = 'mcr-prod-268.s3.us-west-2.amazonaws.com';
   const UPLOAD_PATTERN = /nonce-primary\.json/;
+
+  // Team Builder can fetch nonce-primary before its SPA route reaches a public preview. Keep the
+  // latest in-memory copy and only expose controls once the URL is a preview; viewing a shared
+  // preview never writes storage until the visitor presses a button.
+  const TEAM_BUILDER_PREVIEW_PATH = /^\/games\/ea-sports-college-football\/team-builder\/preview\/[^/]+\/?$/;
+  const PREVIEW_COPY_CONTROL = 'data-teamcrafters-preview-copy';
+  const PREVIEW_CSV_REQUEST = 'tc-team-builder-preview-csv-request';
+  const PREVIEW_CSV_PAYLOAD = 'tc-team-builder-preview-csv-payload';
+  let previewRosterCapture = null;
 
   // The initial nonce-primary GET is the team's persisted save. Clean it once per page load so a
   // newly armed import starts from the original team parts rather than accumulating prior imports.
@@ -418,6 +427,203 @@
     }
   }
 
+  function isTeamBuilderPreview() {
+    return TEAM_BUILDER_PREVIEW_PATH.test(location.pathname);
+  }
+
+  function objectRecord(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  }
+
+  // EA currently stores these at teamData.roster.playerData and
+  // teamData.frostbiteData.characterVisuals. Keep the alternate paths so a harmless field rename
+  // does not silently make preview copying unavailable.
+  function extractPreviewRoster(payload) {
+    const root = objectRecord(payload);
+    const teamData = objectRecord(root?.teamData) || root;
+    const rosterContainer =
+      objectRecord(teamData?.roster) ||
+      objectRecord(teamData?.rosterData) ||
+      objectRecord(root?.roster) ||
+      objectRecord(root?.rosterData);
+    const rosterData =
+      objectRecord(rosterContainer?.playerData) ||
+      objectRecord(rosterContainer?.rosterData) ||
+      objectRecord(teamData?.playerData) ||
+      objectRecord(teamData?.rosterData) ||
+      objectRecord(root?.rosterData) ||
+      objectRecord(root?.playerData);
+    const characterVisuals =
+      objectRecord(teamData?.frostbiteData?.characterVisuals) ||
+      objectRecord(teamData?.characterVisuals) ||
+      objectRecord(root?.characterVisuals);
+    if (!rosterData || !characterVisuals) return null;
+
+    const rosterIds = Object.keys(rosterData);
+    const visualIds = Object.keys(characterVisuals);
+    if (!rosterIds.length || rosterIds.length !== visualIds.length) return null;
+    if (rosterIds.some((id) => !Object.hasOwn(characterVisuals, id))) return null;
+
+    const teamInfo = objectRecord(teamData?.teamInfos) || {};
+    const teamName = [teamInfo.TEAM_NAME, teamInfo.TEAM_NICKNAME].filter(Boolean).join(' ').trim();
+    return {
+      teamName: teamName || 'Team Builder team',
+      sourceUrl: location.href,
+      playerCount: rosterIds.length,
+      rosterJson: JSON.stringify(rosterData),
+      visualsJson: JSON.stringify(characterVisuals),
+    };
+  }
+
+  function previewCopyControl() {
+    return document.querySelector(`[${PREVIEW_COPY_CONTROL}]`);
+  }
+
+  function renderPreviewCopyControl() {
+    const existing = previewCopyControl();
+    if (!isTeamBuilderPreview()) {
+      existing?.remove();
+      return;
+    }
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', renderPreviewCopyControl, { once: true });
+      return;
+    }
+    if (existing) {
+      updatePreviewCopyControl(existing);
+      return;
+    }
+
+    const control = document.createElement('div');
+    control.setAttribute(PREVIEW_COPY_CONTROL, '');
+    Object.assign(control.style, {
+      position: 'fixed', right: '16px', bottom: '16px', zIndex: '2147483647', width: 'min(340px, calc(100vw - 32px))',
+      padding: '12px', border: '1px solid #d7dbe0', borderRadius: '8px', background: '#fff',
+      color: '#1b1f24', boxShadow: '0 4px 16px rgba(0, 0, 0, .28)', fontFamily: 'system-ui, sans-serif',
+    });
+    const detail = document.createElement('div');
+    Object.assign(detail.style, { marginBottom: '9px', fontSize: '12px', lineHeight: '1.4' });
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Copy roster for Team Builder';
+    Object.assign(button.style, {
+      width: '100%', padding: '9px 12px', border: '0', borderRadius: '5px', background: '#1a73e8',
+      color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+    });
+    function requestPreviewAction(button, request, resultEvent, pendingText, successText) {
+      button.disabled = true;
+      button.style.opacity = '0.65';
+      detail.textContent = pendingText;
+      const onResult = (event) => {
+        window.removeEventListener(resultEvent, onResult);
+        const result = event.detail || {};
+        if (result.ok) {
+          detail.textContent = successText(result);
+          return;
+        }
+        detail.textContent = result.error || 'Could not copy this roster. Reload the preview and try again.';
+        button.disabled = false;
+        button.style.opacity = '1';
+      };
+      window.addEventListener(resultEvent, onResult);
+      window.dispatchEvent(new CustomEvent(request));
+    }
+    button.addEventListener('click', () => {
+      requestPreviewAction(
+        button,
+        'tc-team-builder-preview-copy-request',
+        'tc-team-builder-preview-copy-result',
+        'Copying roster…',
+        (result) => {
+          button.textContent = 'Copied';
+          return `Copied ${result.playerCount} players. Open a team and choose the TeamCrafters preset.`;
+        }
+      );
+    });
+    const csvButton = document.createElement('button');
+    csvButton.type = 'button';
+    csvButton.textContent = 'Download CSV';
+    Object.assign(csvButton.style, {
+      width: '100%', marginTop: '8px', padding: '9px 12px', border: '1px solid #1a73e8', borderRadius: '5px',
+      background: '#fff', color: '#1a73e8', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+    });
+    csvButton.addEventListener('click', () => {
+      requestPreviewAction(
+        csvButton,
+        PREVIEW_CSV_REQUEST,
+        'tc-team-builder-preview-csv-result',
+        'Preparing CSV…',
+        (result) => `Downloaded ${result.playerCount}-player CSV. You can edit and import it from the extension.`
+      );
+    });
+    control._teamcraftersPreview = { detail, button, csvButton };
+    control.append(detail, button, csvButton);
+    document.body.appendChild(control);
+    updatePreviewCopyControl(control);
+  }
+
+  function updatePreviewCopyControl(control = previewCopyControl()) {
+    const ui = control?._teamcraftersPreview;
+    if (!ui) return;
+    const ready = Boolean(previewRosterCapture);
+    ui.detail.textContent = ready
+      ? `${previewRosterCapture.playerCount} players ready to copy`
+      : 'Reading roster data…';
+    for (const button of [ui.button, ui.csvButton]) {
+      button.disabled = !ready;
+      button.style.opacity = ready ? '1' : '0.55';
+      button.style.cursor = ready ? 'pointer' : 'wait';
+    }
+  }
+
+  function capturePreviewRoster(payload) {
+    const capture = extractPreviewRoster(payload);
+    if (!capture) {
+      console.warn('[TeamCrafters] nonce-primary did not contain matching rosterData and characterVisuals.');
+      return;
+    }
+    previewRosterCapture = capture;
+    renderPreviewCopyControl();
+  }
+
+  // Team Builder is a single-page app, so the content script survives navigation between a
+  // preview and the editor. Keep the panel scoped to the exact preview route and discard a
+  // previous team's captured data before the next preview's nonce-primary response arrives.
+  function syncPreviewCopyControlSoon() {
+    queueMicrotask(renderPreviewCopyControl);
+  }
+
+  for (const method of ['pushState', 'replaceState']) {
+    const native = history[method];
+    if (typeof native !== 'function' || native.__teamcraftersPreviewRouteSync) continue;
+    const wrapped = function (...args) {
+      const result = native.apply(this, args);
+      syncPreviewCopyControlSoon();
+      return result;
+    };
+    Object.defineProperty(wrapped, '__teamcraftersPreviewRouteSync', { value: true });
+    history[method] = wrapped;
+  }
+  window.addEventListener('popstate', syncPreviewCopyControlSoon);
+  window.addEventListener('hashchange', syncPreviewCopyControlSoon);
+  syncPreviewCopyControlSoon();
+
+  // The isolated bridge owns chrome.storage. It requests this only after the visitor presses the
+  // preview-page Copy button, so viewing a shared preview has no side effects.
+  window.addEventListener('tc-team-builder-preview-copy-request', () => {
+    const detail = isTeamBuilderPreview() && previewRosterCapture
+      ? { ok: true, capture: { ...previewRosterCapture, sourceUrl: location.href } }
+      : { ok: false, error: 'Roster data is still loading. Reload the preview and wait a moment.' };
+    window.dispatchEvent(new CustomEvent('tc-team-builder-preview-copy-payload', { detail }));
+  });
+
+  window.addEventListener(PREVIEW_CSV_REQUEST, () => {
+    const detail = isTeamBuilderPreview() && previewRosterCapture
+      ? { ok: true, capture: { ...previewRosterCapture, sourceUrl: location.href } }
+      : { ok: false, error: 'Roster data is still loading. Reload the preview and wait a moment.' };
+    window.dispatchEvent(new CustomEvent(PREVIEW_CSV_PAYLOAD, { detail }));
+  });
+
   // Imported editable parts deliberately have a readable display name; EA's original part
   // bindings have displayName == ''. Delete every named binding plus its linked part and every
   // uniform that points at one. Removing all three prevents stale, unresolved uniforms from
@@ -782,6 +988,7 @@
       }, 1000);
     });
   }
+
   // === end uniform replacement ===========================================================
 
   // --- get the stored preset payload from ea-bridge.js via a CustomEvent round trip ---
@@ -860,6 +1067,7 @@
       const real = await nativeFetch(input, init);
       try {
         const payload = await real.clone().json();
+        capturePreviewRoster(payload);
         const removed = removeInsertedUniforms(payload);
         if (removed.items) console.info('[TeamCrafters] removed prior imported uniform parts:', removed);
         return jsonResponse(JSON.stringify(payload));
@@ -969,6 +1177,7 @@
       nativeFetch(info.url)
         .then((response) => response.json())
         .then((payload) => {
+          capturePreviewRoster(payload);
           const removed = removeInsertedUniforms(payload);
           if (removed.items) console.info('[TeamCrafters] removed prior imported uniform parts:', removed);
           synthesize(xhr, info.url, JSON.stringify(payload));

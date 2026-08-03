@@ -62,17 +62,28 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 Click the extension's toolbar icon any time to see what's currently copied, preview it on
 TeamCrafters, or clear it. While a local team is saved, so the names persist, the auto name-generation function is disabled, you'll need to unload your team to re-enable it.
 
+## Or copy an EA Team Builder preview
+
+1. Open a shared team at `https://www.ea.com/games/ea-sports-college-football/team-builder/preview/[teamid]`.
+2. Wait for the page to load, then use the **Copy roster for Team Builder** control at the bottom-right.
+3. Open the roster presets on any Team Builder team and select the new **TeamCrafters** preset.
+
+The preview copy reads the page's `nonce-primary` response and preserves the original player map
+and `characterVisuals` map together, including each player's exact portrait and equipment. It only
+writes the clipboard after you press Copy. Use **Download CSV** beside it to save the same roster
+in the extension's import format; the CSV includes `portraitId` for every player.
+
 ## Or build a roster from a spreadsheet
 
 You don't have to start from a TeamCrafters team — you can bring your own roster in from a CSV.
 
 1. Click the extension's toolbar icon and choose **"import a roster from a CSV"**.
-2. Click **Download sample-roster.csv**. It's a complete, valid 85-player roster with every column filled in.
+2. Click **Download sample-roster.csv**. It's a complete, valid 85-player roster with every required column filled in.
 3. Open it in Excel or Google Sheets, replace the players with whatever you want, and save as CSV.
 4. Back on that page, give the roster a name, pick your file, and hit **Import roster**.
 5. It shows up in Team Builder's presets exactly like a copied TeamCrafters roster.
 
-Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone) can be left blank too; those fall back to the base template's values.
+Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone) can be left blank too; those fall back to the base template's values. An optional `portraitId` preserves a Team Builder player's exact EA head; it takes precedence over `skinTone`, while a blank `portraitId` uses the existing skin-tone-to-portrait fallback.
 
 Your roster also has to be able to field a team, so the import requires **45–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 2 TE, 1 each on the O-line, 2 LE/RE, 3 DT, 2 MLB, 2 CB, 2 FS, 1 SS, 1 K, 1 P — FB optional). Two units also have a combined minimum on top of that: **8 offensive linemen** across LT/LG/C/RG/RT and **3 outside linebackers** across LOLB/ROLB. How you distribute those is up to you, as long as no single spot is empty. Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
 
@@ -92,6 +103,18 @@ It's a faithful dump — nothing is padded or guessed:
   add players.
 
 Either way the file always downloads, and the button tells you exactly what to fix first.
+
+## Modify player equipment
+
+Every copied or CSV-imported roster carries its matching `character_visuals.json`. Open the
+extension and choose **Team Builder Unleashed** to edit that data on TeamCrafters before loading the
+preset in Team Builder. The web editor has the complete CFB 27 equipment catalog, searchable image
+previews, paired-side controls, and bulk actions.
+
+The page communicates with the extension through a versioned, revision-safe bridge. It receives
+only the roster and character-visual fields needed by the editor, keeps local drafts in the browser,
+and writes only `visualsJson` plus its edit timestamp after an explicit save. A stale editor cannot
+overwrite a newly copied roster, and all unrelated clipboard fields remain private to the extension.
 
 ## Or swap in a real school's uniforms
 
@@ -171,7 +194,8 @@ closure-bound and effectively unreachable in the production build). It:
 | `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
 | `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
-| `options.html` / `options.js` | — | — | Tabbed uniform picker and CSV importer (file picker, validation, sample download) |
+| `options.html` / `options.js` | — | — | Tabbed uniform picker, CSV importer, and Team Builder Unleashed launcher/status |
+| `equipment-web-bridge.js` | isolated | exact Team Builder Unleashed route | Versioned, revision-safe web editor bridge for the stored roster visuals |
 | `csv-import.js` | isolated | classic-roster pages | CSV parsing + mapping into the normalized roster shape; owns the column schema and roster rules |
 | `csv-export.js` | isolated | classic-roster pages | The reverse — normalized roster to CSV, reusing `csv-import.js`'s tables so the two can't drift |
 | `cfb27-position-ovr-calculator.js` | — | — | Archetype-weighted OVR calculation (options page only) |
@@ -194,8 +218,13 @@ references internally consistent (mismatched appearance/asset fields crash the g
 - **Roster:** names, jersey number, height, weight, class year, handedness, dev trait, archetype,
   position (on reassignment), all 54 ratings, and `PLYR_PORTRAIT`
 - **Visuals:** name/number/height/weight mirrors, plus `genericHeadName` + `skinTone`
-- **Never touched:** `PLYR_ID`, `PLYR_ORIGID`, `PLYR_ASSETNAME`, `genericHead`, `assetName`,
-  `bodyType`, `loadouts` (all equipment), `skinToneScale`, `containerId`
+- **Never touched during roster merge:** `PLYR_ID`, `PLYR_ORIGID`, `PLYR_ASSETNAME`, `genericHead`,
+  `assetName`, `bodyType`, `loadouts`, `skinToneScale`, `containerId`
+
+The Team Builder Unleashed web editor runs after that merge. The extension bridge validates that a
+save changes only supported `loadoutElements[].itemAssetName` values (or appends the minimal element
+for a missing slot); identity, ratings, head recipe, and the rest of each visuals entry remain
+untouched.
 
 Encodings worth knowing, all confirmed against real team files:
 
@@ -215,7 +244,7 @@ There are two sources for a roster, and they converge immediately:
 
 Both produce the **same normalized shape** (documented below), which is handed to `roster-merge.js`. Everything after that point — position matching, merge rules, wire encodings, storage, and serving — is identical. If you add a third source, produce that shape and you're done.
 
-`csv-export.js` runs that shape back out to CSV, closing the loop: a roster fetched from the API can be written to a spreadsheet and re-enter through `csv-import.js`. It derives its column list and roster rules from `csv-import.js`'s exports rather than restating them, so the two halves can't disagree about the format. The export writes the clipboard **directly**, never the merged result — that's what keeps a rating the classic game lacked visible as a blank cell instead of silently inheriting the base template's value.
+`csv-export.js` runs that shape back out to CSV, closing the loop: a roster fetched from the API can be written to a spreadsheet and re-enter through `csv-import.js`. It derives its column list and roster rules from `csv-import.js`'s exports rather than restating them, so the two halves can't disagree about the format. The export includes `portraitId` whenever the source supplies one, preserving the exact Team Builder head on re-import; if the column is cleared, `skinTone` remains the fallback. The export writes the clipboard **directly**, never the merged result — that's what keeps a rating the classic game lacked visible as a blank cell instead of silently inheriting the base template's value.
 
 ## The roster export API
 
@@ -287,8 +316,8 @@ for f in *.js; do node --check "$f"; done
 After editing, hit the reload icon on the extension's card in `chrome://extensions`, then reload
 any open TeamCrafters / Team Builder tabs. Editing files on disk does **not** auto-reload it.
 
-The merge logic is pure with no browser dependencies, so you can exercise it in Node against the
-bundled template:
+The merge logic stays pure when given the bundled portrait catalog, so you can exercise it in Node
+against the bundled template:
 
 ```js
 const fs = require('fs');
@@ -297,9 +326,10 @@ eval(fs.readFileSync('roster-merge.js', 'utf8'));
 
 const roster  = JSON.parse(fs.readFileSync('base-template/roster.json', 'utf8'));
 const visuals = JSON.parse(fs.readFileSync('base-template/character_visuals.json', 'utf8'));
+const portraits = JSON.parse(fs.readFileSync('reference/portrait-catalog.json', 'utf8'));
 const clipboard = { source: { teamName: 'Test' }, playerCount: 1, players: [ /* ... */ ] };
 
-const out = window.TCRosterMerge.buildPresetPayload(clipboard, roster, visuals);
+const out = window.TCRosterMerge.buildPresetPayload(clipboard, roster, visuals, portraits);
 console.log(out.stats);
 ```
 

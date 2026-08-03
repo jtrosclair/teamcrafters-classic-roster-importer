@@ -29,7 +29,7 @@
 
   const BIO_COLUMNS = [
     'firstName', 'lastName', 'position', 'jerseyNumber', 'classYear',
-    'heightInches', 'weightLbs', 'isLefty', 'skinTone', 'devTrait',
+    'heightInches', 'weightLbs', 'isLefty', 'skinTone', 'portraitId', 'devTrait',
   ];
 
   // OVR is derived on import and a supplied value is rejected, so it never appears in the file.
@@ -62,6 +62,25 @@
     if (SKIN_TONE_BY_PORTRAIT[portrait] === undefined) SKIN_TONE_BY_PORTRAIT[portrait] = Number(tone);
   }
 
+  // Team Builder's saved player map uses EA wire names, while CSV uses the modern short names.
+  // Keep this inverse mapping here so a copied Team Builder preview can use the exact same CSV
+  // writer as a TeamCrafters classic roster.
+  const EA_WIRE_SUFFIX_BY_MODERN_KEY = {
+    OVR: 'OVERALLRATING', SPD: 'SPEED', STR: 'STRENGTH', AGI: 'AGILITY', ACC: 'ACCELERATION',
+    AWR: 'AWARENESS', BTK: 'BREAKTACKLE', TRK: 'TRUCKING', COD: 'CHANGEOFDIRECTION', BCV: 'BCVISION',
+    SFA: 'STIFFARM', SPM: 'SPINMOVE', JKM: 'JUKEMOVE', CAR: 'CARRYING', CTH: 'CATCHING',
+    SRR: 'SHORTROUTERUN', MRR: 'MEDROUTERUN', DRR: 'DEEPROUTERUN', CIT: 'CATCHINTRAFFIC',
+    SPC: 'SPECTACULARCATCH', RLS: 'RELEASE', JMP: 'JUMPING', THP: 'THROWPOWER',
+    SAC: 'THROWACCURACYSHORT', MAC: 'THROWACCURACYMID', DAC: 'THROWACCURACYDEEP',
+    RUN: 'THROWONTHERUN', TUP: 'THROWUNDERPRESSURE', BSK: 'BREAKSACK', PAC: 'PLAYACTION',
+    TAK: 'TACKLE', POW: 'HITPOWER', PMV: 'POWERMOVES', FMV: 'FINESSEMOVES', BSH: 'BLOCKSHEDDING',
+    PUR: 'PURSUIT', PRC: 'PLAYRECOGNITION', MCV: 'MANCOVERAGE', ZCV: 'ZONECOVERAGE', PRS: 'PRESS',
+    PBK: 'PASSBLOCK', PBP: 'PASSBLOCKPOWER', PBF: 'PASSBLOCKFINESSE', RBK: 'RUNBLOCK',
+    RBP: 'RUNBLOCKPOWER', RPF: 'RUNBLOCKFINESSE', LBK: 'LEADBLOCK', IBL: 'IMPACTBLOCKING',
+    KPW: 'KICKPOWER', KAC: 'KICKACCURACY', RET: 'KICKRETURN', STA: 'STAMINA', INJ: 'INJURY',
+    TGH: 'TOUGHNESS', LSP: 'LONGSNAPRATING',
+  };
+
   // --- CSV writing -----------------------------------------------------------------------
   // RFC 4180: quote when the value contains a delimiter, quote, or newline; double inner quotes.
   function escapeCell(value) {
@@ -85,6 +104,9 @@
       weightLbs: player.weightLbs,
       isLefty: player.isLefty == null ? null : (player.isLefty ? 'TRUE' : 'FALSE'),
       skinTone: skinTone === undefined ? null : skinTone,
+      // Exact head identity wins on re-import. Keep skinTone too, so removing portraitId from a
+      // spreadsheet intentionally restores the simple skin-tone fallback.
+      portraitId: portrait,
       devTrait: player.devTrait,
     };
 
@@ -146,5 +168,37 @@
     return { csv: '﻿' + lines.join('\r\n') + '\r\n', summary: summarize(players) };
   }
 
-  window.TCCsvExport = { buildRosterCsv, COLUMNS };
+  // Convert Team Builder's nonce-primary playerData map into the normalized shape this exporter
+  // already understands. This keeps preview downloads and TeamCrafters downloads in one CSV
+  // dialect, including the exact portraitId column.
+  function buildEaRosterCsv(playerData) {
+    const players = Object.entries(playerData || {}).map(([sourcePlayerId, player]) => {
+      const numberOrNull = (value) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
+      };
+      const ratings = {};
+      for (const key of RATING_KEYS) {
+        const raw = player[`PLYR_${EA_WIRE_SUFFIX_BY_MODERN_KEY[key]}`];
+        if (raw !== undefined && raw !== null && raw !== '') ratings[key] = Number(raw);
+      }
+      return {
+        sourcePlayerId,
+        firstName: player.PLYR_FIRSTNAME || '',
+        lastName: player.PLYR_LASTNAME || '',
+        jerseyNumber: numberOrNull(player.PLYR_JERSEYNUM) ?? 0,
+        positionCode: numberOrNull(player.PLYR_POSITION),
+        schoolYearCode: numberOrNull(player.PLYR_SCHOOLYEAR),
+        heightInches: numberOrNull(player.PLYR_HEIGHT),
+        weightLbs: numberOrNull(player.PLYR_WEIGHT) == null ? null : Number(player.PLYR_WEIGHT) + 160,
+        isLefty: String(player.PLYR_HANDEDNESS) === '1',
+        devTrait: numberOrNull(player.PLYR_TRAITDEVELOPMENT),
+        portraitId: player.PLYR_PORTRAIT == null ? null : String(player.PLYR_PORTRAIT),
+        ratings,
+      };
+    });
+    return buildRosterCsv({ players });
+  }
+
+  window.TCCsvExport = { buildRosterCsv, buildEaRosterCsv, COLUMNS };
 })();

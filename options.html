@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Roster &amp; uniforms — TeamCrafters</title>
+<title>Roster, equipment &amp; uniforms — TeamCrafters</title>
 <style>
   :root { color-scheme: light; }
   body {
@@ -90,17 +90,41 @@
   .chip.dark { background: #2b3440; color: #fff; }
   .chip.light { background: #eef1f5; color: #333; border: 1px solid #d7dbe0; }
   .chip.official { background: #e9f7ee; color: #1c5b31; border: 1px solid #b7e0c4; }
+
+  /* The full equipment editor lives on TeamCrafters; this extension page is its launch/status surface. */
+  .equipment-launch {
+    position: relative; overflow: hidden; padding: 26px; border-color: #c9d7ea;
+    background: linear-gradient(145deg, #fff 0%, #f4f8ff 70%, #eef5ff 100%);
+  }
+  .equipment-launch::after {
+    content: ''; position: absolute; top: -58px; right: -44px; width: 170px; height: 170px;
+    border: 22px solid rgba(26,115,232,.07); border-radius: 50%; pointer-events: none;
+  }
+  .equipment-launch-kicker {
+    margin: 0 0 8px; color: #1a73e8; font-size: 10.5px; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase;
+  }
+  .equipment-launch h2 { position: relative; z-index: 1; font-size: 22px; letter-spacing: -.02em; }
+  .equipment-launch .sub { position: relative; z-index: 1; max-width: 560px; }
+  .equipment-launch-actions { position: relative; z-index: 1; display: flex; gap: 9px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+  .equipment-launch-status {
+    position: relative; z-index: 1; margin-top: 18px; padding-top: 14px; border-top: 1px solid #dce6f2;
+    color: #5f6b7a; font-size: 12.5px; line-height: 1.55;
+  }
+  .equipment-launch-status strong { display: block; color: #23364e; font-size: 13px; }
+  a.btn { text-decoration: none; }
 </style>
 </head>
 <body>
   <header>
     <img src="icons/icon48.png" alt="">
-    <h1>Roster &amp; uniforms</h1>
+    <h1>Roster workshop</h1>
   </header>
 
   <nav class="tabs" aria-label="Tools" role="tablist">
     <button class="tab" id="tab-uniforms" role="tab" aria-controls="panel-uniforms" aria-selected="false" data-panel="panel-uniforms">Team uniforms</button>
     <button class="tab" id="tab-csv" role="tab" aria-controls="panel-csv" aria-selected="false" data-panel="panel-csv">Import roster (CSV)</button>
+    <button class="tab" id="tab-equipment" role="tab" aria-controls="panel-equipment" aria-selected="false" data-panel="panel-equipment">Modify equipment</button>
   </nav>
 
   <main>
@@ -131,7 +155,7 @@
     <div class="card">
       <h2>1. Start from the sample</h2>
       <p class="sub">
-        The sample is a complete, valid 85-player roster with every column filled in. Open it in
+        The sample is a complete, valid 85-player roster with every required column filled in. Open it in
         Excel or Google Sheets, change the players to whatever you want, and save it as CSV.
       </p>
       <button id="downloadSample" class="secondary">⬇ Download sample-roster.csv</button>
@@ -142,7 +166,7 @@
       <p class="sub">
         Every rating must be filled in with a number from 0&ndash;99. <b>Don't include OVR</b> &mdash; it's
         always calculated from the player's ratings and position, so a supplied value is rejected.
-        Bio fields (height, weight, class, skin tone&hellip;) can be
+        Bio fields (height, weight, class, skin tone, portrait&hellip;) can be
         left blank &mdash; those fall back to the base template's values.
       </p>
       <input type="text" id="teamName" placeholder="Roster name (shows in the Team Builder presets list)">
@@ -202,6 +226,7 @@
           <tr><td><code>weightLbs</code></td><td>Real pounds, e.g. <code>209</code></td></tr>
           <tr><td><code>isLefty</code></td><td>TRUE / FALSE</td></tr>
           <tr><td><code>skinTone</code></td><td>0–7 &nbsp; (0–1 light, 7 medium-light, 2 medium, 3 medium-dark, 4–6 dark)</td></tr>
+          <tr><td><code>portraitId</code></td><td>Optional EA portrait ID. When present, this exact head is used; when blank, <code>skinTone</code> selects the fallback portrait.</td></tr>
           <tr><td><code>devTrait</code></td><td>0 Normal, 1 Impact, 2 Star, 3 Elite</td></tr>
           <tr><td><code>OVR</code></td><td>Don't include it &mdash; it's always calculated from the player's ratings and position, and a supplied value is rejected</td></tr>
           <tr><td>Ratings</td><td><b>All required</b>, 0–99 each: SPD, STR, AGI, ACC, AWR, BTK, TRK, COD, BCV, SFA, SPM, JKM, CAR, CTH, SRR, MRR, DRR, CIT, SPC, RLS, JMP, THP, SAC, MAC, DAC, RUN, TUP, BSK, PAC, TAK, POW, PMV, FMV, BSH, PUR, PRC, MCV, ZCV, PRS, PBK, PBP, PBF, RBK, RBP, RPF, LBK, IBL, KPW, KAC, RET, STA, INJ, TGH, LSP</td></tr>
@@ -213,6 +238,22 @@
         </p>
       </details>
     </div>
+    </section>
+
+    <section id="panel-equipment" class="panel" role="tabpanel" aria-labelledby="tab-equipment">
+      <div class="card equipment-launch">
+        <p class="equipment-launch-kicker">Full web editor</p>
+        <h2>Team Builder Unleashed</h2>
+        <p class="sub">
+          Equipment editing now lives on TeamCrafters, with the complete CFB 27 catalog, searchable
+          previews, bulk actions, and revision-safe saving back to this extension.
+        </p>
+        <div class="equipment-launch-actions">
+          <a class="btn" href="https://www.teamcrafters.net/cfb27/team-builder-unleashed" target="_blank" rel="noopener">Open equipment editor &rarr;</a>
+          <button id="equipmentGoToImport" type="button" class="secondary">Import a CSV roster</button>
+        </div>
+        <div id="equipmentLaunchStatus" class="equipment-launch-status" aria-live="polite">Checking the extension clipboard…</div>
+      </div>
     </section>
   </main>
 

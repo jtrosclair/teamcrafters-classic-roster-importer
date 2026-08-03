@@ -92,14 +92,18 @@ function render(stored) {
   const stats = stored.stats || {};
   const extra = [];
   if (stats.unplacedPlayers) extra.push(`${stats.unplacedPlayers} players didn’t fit`);
+  const sourceLabel = stats.copiedFromTeamBuilder
+    ? 'View source Team Builder team →'
+    : 'Preview roster on TeamCrafters →';
 
   statusEl.className = 'status-card';
   statusEl.innerHTML = `
     <div class="team-name">${stored.teamName ?? 'Unknown team'}</div>
     <div class="meta">${stored.playerCount ?? '?'} players copied</div>
     <div class="meta">Copied ${stored.copiedAt ? formatCopiedAt(stored.copiedAt) : 'unknown time'}</div>
+    ${stored.equipmentEditedAt ? '<div class="meta">Custom equipment saved</div>' : ''}
     ${extra.length ? `<div class="meta">${extra.join(' · ')}</div>` : ''}
-    ${stored.sourceUrl ? `<div class="meta"><a href="${stored.sourceUrl}" target="_blank" rel="noopener">Preview roster on TeamCrafters &rarr;</a></div>` : ''}
+    ${stored.sourceUrl ? `<div class="meta"><a href="${stored.sourceUrl}" target="_blank" rel="noopener">${sourceLabel}</a></div>` : ''}
   `;
   clearBtn.style.display = 'block';
 }
@@ -156,4 +160,9 @@ document.getElementById('csvLink').addEventListener('click', (e) => {
 document.getElementById('uniformLink').addEventListener('click', (e) => {
   e.preventDefault();
   openOptions('panel-uniforms');
+});
+
+document.getElementById('equipmentLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: 'https://www.teamcrafters.net/cfb27/team-builder-unleashed' });
 });

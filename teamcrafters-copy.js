@@ -130,16 +130,18 @@
     setBusy(ui, true);
     setStatus(ui, 'Copying roster…', false);
     try {
-      const [clipboard, baseRoster, baseVisuals] = await Promise.all([
+      const [clipboard, baseRoster, baseVisuals, portraitCatalog] = await Promise.all([
         fetchJson(rosterApiUrl(route)),
         fetchJson(chrome.runtime.getURL('base-template/roster.json')),
         fetchJson(chrome.runtime.getURL('base-template/character_visuals.json')),
+        window.TCRosterMerge.loadPortraitCatalog(),
       ]);
 
       const { roster, visuals, stats } = window.TCRosterMerge.buildPresetPayload(
         clipboard,
         baseRoster,
-        baseVisuals
+        baseVisuals,
+        portraitCatalog
       );
 
       await chrome.storage.local.set({

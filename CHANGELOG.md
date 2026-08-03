@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.5.0 — 2026-08-03
+
+### Highlights
+
+- Add an explicit **Copy roster for Team Builder** control on EA Team Builder preview URLs. It
+  reads the page's `nonce-primary` response and saves its roster data and character visuals as a
+  reusable TeamCrafters preset, or downloads the same roster as an editable CSV.
+- Add the production Team Builder Unleashed bridge for the TeamCrafters web equipment editor, with
+  whitelisted reads, revision-safe visual-only writes, player-ID and preservation validation, and
+  live clipboard-change notifications. The extension's former local editor is now a launch/status
+  surface for the full web experience.
+- Add optional CSV `portraitId` support. An exact valid EA portrait now overrides `skinTone`,
+  while blank values retain the existing skin-tone fallback.
+- Preserve portrait IDs in downloaded CSVs and use the full bundled EA portrait catalog to apply
+  each selected head's matching recipe and complexion during import.
+
+### Upgrade
+
+Reload the extension from `chrome://extensions`, then reload any open Team Builder or TeamCrafters
+tabs. Existing copied rosters and uniform selections are retained.
+
 ## v0.4.0
 
 ### Highlights

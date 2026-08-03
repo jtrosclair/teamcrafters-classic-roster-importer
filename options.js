@@ -15,7 +15,7 @@
   const UNIFORM_KEY = 'tcUniformClipboard';
 
   // --- tabs ------------------------------------------------------------------------------
-  // Two independent tools live on this page — the uniform picker and the CSV importer — and each
+  // Independent tools live on this page — the uniform picker, CSV importer and equipment launcher — and each
   // is a lot of information, so only one panel shows at a time. The popup links here with a
   // #panel-… hash to open the right one; default is uniforms. Keep the state in the URL so popup
   // links can open the appropriate tool and browser back/forward navigation remains intuitive.
@@ -41,6 +41,36 @@
   }
   window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
   showTab(location.hash.slice(1));
+
+  // --- Team Builder Unleashed launcher ---------------------------------------------------
+  // The full visual editor is a TeamCrafters web page. This options tab only confirms which
+  // clipboard the bridge will expose and offers a convenient path back to CSV import.
+  const equipmentLaunchStatus = document.getElementById('equipmentLaunchStatus');
+  function renderEquipmentLaunchStatus(stored) {
+    if (!stored?.rosterJson || !stored?.visualsJson) {
+      equipmentLaunchStatus.innerHTML =
+        '<strong>No roster is ready yet.</strong>Copy a classic team or import a CSV, then open Team Builder Unleashed.';
+      return;
+    }
+    const edited = stored.equipmentEditedAt
+      ? ` · Equipment saved ${new Date(stored.equipmentEditedAt).toLocaleString()}`
+      : '';
+    equipmentLaunchStatus.innerHTML =
+      `<strong>${esc(stored.teamName || 'Imported roster')} is ready.</strong>` +
+      `${esc(stored.playerCount ?? '?')} players are available to the web editor${esc(edited)}.`;
+  }
+
+  chrome.storage.local.get(STORAGE_KEY).then((result) => {
+    renderEquipmentLaunchStatus(result[STORAGE_KEY]);
+  });
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes[STORAGE_KEY]) {
+      renderEquipmentLaunchStatus(changes[STORAGE_KEY].newValue);
+    }
+  });
+  document.getElementById('equipmentGoToImport').addEventListener('click', () => {
+    document.getElementById('tab-csv').click();
+  });
 
   const fileInput = document.getElementById('csvFile');
   const teamInput = document.getElementById('teamName');
@@ -248,7 +278,10 @@
     try {
       const text = await file.text();
       const teamName = teamInput.value.trim() || 'Imported roster';
-      const { errors, warnings, clipboard } = window.TCCsvImport.buildClipboardFromCsv(text, teamName);
+      const portraitCatalog = await window.TCRosterMerge.loadPortraitCatalog();
+      const { errors, warnings, clipboard } = window.TCCsvImport.buildClipboardFromCsv(
+        text, teamName, portraitCatalog
+      );
 
       if (errors.length) {
         show('err', `<b>Couldn't import that file.</b>${list(errors)}`);
@@ -262,7 +295,7 @@
       ]);
 
       const { roster, visuals, stats } = window.TCRosterMerge.buildPresetPayload(
-        clipboard, baseRoster, baseVisuals
+        clipboard, baseRoster, baseVisuals, portraitCatalog
       );
 
       await chrome.storage.local.set({

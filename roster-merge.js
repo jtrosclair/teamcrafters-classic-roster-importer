@@ -46,26 +46,34 @@
   const VISUALS_URL =
     'https://cdn.mcr.ea.com/303/teamcrafters/files/tu1-2c74c88433_teamcrafters.json/0-applicationjson-character_visuals.json';
 
-  // For each portrait our skin-tone mapping can produce (from heads.json): the head recipe
-  // (== character_visuals.genericHeadName) and its complexion (== character_visuals.skinTone).
-  // A valid character_visuals entry requires genericHeadName and skinTone to agree (the recipe's
-  // trailing complexion digit equals skinTone in every working team), so we set both together.
-  // genericHead (int) and assetName are left as the template slot's — the head index is a
-  // secondary cache and the asset name is tied 1:1 to the slot and must never change.
-  const APPEARANCE_BY_PORTRAIT = {
-    '7': { recipe: 'Generic_0007_P_T0000_D_1_4', skinTone: 1 },
-    '3157': { recipe: 'Generic_3157_P_T0150_D_3_3', skinTone: 3 },
-    '3087': { recipe: 'Generic_3087_P_T0147_T_5_4', skinTone: 5 },
-    '3163': { recipe: 'Generic_3163_P_T0151_T_7_2', skinTone: 7 },
-  };
+  // Exact Team Builder portraits need both their roster ID and the paired character-visuals
+  // recipe/complexion. The catalog covers the full EA set, not only the four skin-tone fallbacks.
+  const PORTRAIT_CATALOG_PATH = 'reference/portrait-catalog.json';
+  let portraitCatalogPromise = null;
+
+  function loadPortraitCatalog() {
+    if (!portraitCatalogPromise) {
+      const url = chrome.runtime.getURL(PORTRAIT_CATALOG_PATH);
+      portraitCatalogPromise = fetch(url).then(async (res) => {
+        if (!res.ok) throw new Error(`Could not load the EA portrait catalog (${res.status}).`);
+        return res.json();
+      });
+    }
+    return portraitCatalogPromise;
+  }
+
+  function appearanceForPortrait(portraitCatalog, portraitId) {
+    if (portraitId == null) return null;
+    const entry = portraitCatalog?.[String(portraitId)];
+    if (!entry?.recipe || !Number.isInteger(entry.complexionId)) return null;
+    return { recipe: entry.recipe, skinTone: entry.complexionId };
+  }
 
   // Overwrite one base roster slot + its paired visuals entry with a TeamCrafters player.
-  // ONLY names / bio / ratings / position are replaced. Every appearance and asset field
-  // (PLYR_PORTRAIT, PLYR_ASSETNAME, genericHead, genericHeadName, skinTone, loadouts, and every
-  // other cosmetic/engine field) is left exactly as the template's, so the roster and visuals
-  // asset references stay internally consistent. Editing appearance across template players
-  // created unlinked assets and crashed the game on load, so we deliberately keep it stock.
-  function mergeIntoSlot(rosterEntry, visualsEntry, tc, overwritePosition) {
+  // Names, bio, ratings, position, PLYR_PORTRAIT, genericHeadName, and skinTone may change. The
+  // remaining appearance and asset fields (including genericHead, assetName, and loadouts) stay
+  // exactly as the template's so the roster and visuals asset references remain consistent.
+  function mergeIntoSlot(rosterEntry, visualsEntry, tc, overwritePosition, portraitCatalog) {
     rosterEntry.PLYR_FIRSTNAME = tc.firstName;
     rosterEntry.PLYR_LASTNAME = tc.lastName;
     rosterEntry.PLYR_JERSEYNUM = String(tc.jerseyNumber);
@@ -98,7 +106,7 @@
       visualsEntry.jerseyNumber = Number(tc.jerseyNumber);
       visualsEntry.weightPounds = Number(tc.weightLbs);
       if (tc.heightInches != null) visualsEntry.heightInches = Number(tc.heightInches);
-      const appearance = tc.portraitId != null ? APPEARANCE_BY_PORTRAIT[String(tc.portraitId)] : null;
+      const appearance = appearanceForPortrait(portraitCatalog, tc.portraitId);
       if (appearance) {
         visualsEntry.genericHeadName = appearance.recipe;
         visualsEntry.skinTone = appearance.skinTone;
@@ -110,7 +118,15 @@
   // template. Matching mirrors the original design: group both sides by EA position code, sort
   // each side best-first by overall rating, pair within position, then reassign any leftover
   // players across positions into leftover slots (overwriting those slots' position).
-  function buildPresetPayload(clipboard, baseRoster, baseVisuals) {
+  function buildPresetPayload(clipboard, baseRoster, baseVisuals, portraitCatalog) {
+    for (const player of clipboard.players || []) {
+      if (player.portraitId != null && !appearanceForPortrait(portraitCatalog, player.portraitId)) {
+        throw new Error(
+          `Player ${player.firstName || ''} ${player.lastName || ''} has portraitId ` +
+          `"${player.portraitId}", which isn't in the EA portrait catalog.`
+        );
+      }
+    }
     const roster = structuredClone(baseRoster);
     const visuals = structuredClone(baseVisuals);
 
@@ -142,7 +158,7 @@
       const pairCount = Math.min(slotIds.length, players.length);
       for (let i = 0; i < pairCount; i++) {
         const id = slotIds[i];
-        mergeIntoSlot(roster[id], visuals[id], players[i], false);
+        mergeIntoSlot(roster[id], visuals[id], players[i], false, portraitCatalog);
         filledCount++;
       }
       leftoverSlots.push(...slotIds.slice(pairCount));
@@ -152,7 +168,7 @@
     const reassignCount = Math.min(leftoverSlots.length, leftoverPlayers.length);
     for (let i = 0; i < reassignCount; i++) {
       const id = leftoverSlots[i];
-      mergeIntoSlot(roster[id], visuals[id], leftoverPlayers[i], true);
+      mergeIntoSlot(roster[id], visuals[id], leftoverPlayers[i], true, portraitCatalog);
       filledCount++;
     }
 
@@ -176,5 +192,10 @@
     };
   }
 
-  window.TCRosterMerge = { buildPresetPayload, ROSTER_URL, VISUALS_URL };
+  window.TCRosterMerge = {
+    buildPresetPayload,
+    loadPortraitCatalog,
+    ROSTER_URL,
+    VISUALS_URL,
+  };
 })();
