@@ -72,8 +72,18 @@ asset reference fall back to the public roster table and use the extension's sta
 map so they remain safe to load in Team Builder.
 
 CFB 27 Team Builder directory pages use the same verified payload path, so they preserve the
-original roster, portraits, and equipment. Copy actions are intentionally available only from
-TeamCrafters pages—not from EA Team Builder preview pages.
+original roster, portraits, and equipment.
+
+## Or copy an EA Team Builder preview
+
+1. Open a shared team at `https://www.ea.com/games/ea-sports-college-football/team-builder/preview/[teamid]`.
+2. Wait for the page to load, then use the **Copy roster for Team Builder** control at the bottom-right.
+3. Open the roster presets on any Team Builder team and select the new **TeamCrafters** preset.
+
+The preview copy reads the page's `nonce-primary` response and preserves the original player map
+and `characterVisuals` map together, including each player's exact portrait and equipment. It only
+writes the clipboard after you press Copy. Use **Download CSV** beside it to save the same roster
+in the extension's import format; the CSV includes `portraitId` for every player.
 
 ## Or build a roster from a spreadsheet
 

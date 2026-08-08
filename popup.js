@@ -94,7 +94,9 @@ function render(stored) {
   const stats = stored.stats || {};
   const extra = [];
   if (stats.unplacedPlayers) extra.push(`${stats.unplacedPlayers} players didn’t fit`);
-  const sourceLabel = 'View source team on TeamCrafters →';
+  const sourceLabel = stats.copiedFromTeamBuilder
+    ? 'View source Team Builder team →'
+    : 'View source team on TeamCrafters →';
 
   statusEl.className = 'status-card';
   statusEl.innerHTML = `

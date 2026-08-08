@@ -12,9 +12,8 @@
 - Copy a public TeamCrafters **custom team** or CFB 27 **Team Builder directory team** straight
   into Team Builder. Its original roster, player appearances, and equipment are preserved whenever
   an EA asset is available. Those pages also offer **Download CSV** for the roster.
-- Copy actions now start only from TeamCrafters. The former EA Team Builder preview-page copy tool
-  has been retired, so use a TeamCrafters classic, custom-team, or Team Builder directory page as
-  the source instead.
+- Copy a shared **EA Team Builder preview** directly into the extension, preserving its roster,
+  player appearances, and equipment. The same preview control can download an editable CSV.
 - Pick a **mascot** from the new extension tools, then apply it when you save in Team Builder.
   Every save change remains explicitly confirmed.
 - Try the **experimental stadium picker** to apply a stadium on your next save. Not all stadiums

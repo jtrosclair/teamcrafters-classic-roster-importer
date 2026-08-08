@@ -4,7 +4,7 @@
   "short_name": "Classic Roster Importer",
   "version": "0.6.0",
   "author": "TeamCrafters",
-  "description": "By TeamCrafters. Copy classic, custom, or Team Builder directory rosters from TeamCrafters, then load them as an \"Import from TeamCrafters\" preset.",
+  "description": "By TeamCrafters. Copy classic, custom, or Team Builder directory rosters from TeamCrafters, or an EA Team Builder preview, then load them as an \"Import from TeamCrafters\" preset.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -47,6 +47,8 @@
         "https://www.ea.com/games/ea-sports-college-football/team-builder/*"
       ],
       "js": [
+        "csv-import.js",
+        "csv-export.js",
         "ea-bridge.js"
       ],
       "world": "ISOLATED",
