@@ -24,9 +24,9 @@
 // The sentinel URLs are fake EA-CDN-looking URLs (carrying a "_teamcrafters.json" marker) that
 // only exist in our injected preset, so we answer them locally instead of hitting the network.
 //
-// The roster/visuals data itself is built at copy time on teamcrafters.net (or copied from an EA
-// Team Builder preview) and lives in chrome.storage.local; ea-bridge.js (ISOLATED world) relays
-// it here, since MAIN world has no chrome.* APIs.
+// The roster/visuals data itself is built at copy time on teamcrafters.net and lives in
+// chrome.storage.local; ea-bridge.js (ISOLATED world) relays it here, since MAIN world has no
+// chrome.* APIs.
 //
 // It ALSO intercepts one upload (see "uniform replacement" below) — the only place this extension
 // changes what gets written to EA rather than what gets read from it.
@@ -47,15 +47,6 @@
   // armed the request isn't touched at all.
   const UPLOAD_HOST = 'mcr-prod-268.s3.us-west-2.amazonaws.com';
   const UPLOAD_PATTERN = /nonce-primary\.json/;
-
-  // Team Builder can fetch nonce-primary before its SPA route reaches a public preview. Keep the
-  // latest in-memory copy and only expose controls once the URL is a preview; viewing a shared
-  // preview never writes storage until the visitor presses a button.
-  const TEAM_BUILDER_PREVIEW_PATH = /^\/games\/ea-sports-college-football\/team-builder\/preview\/[^/]+\/?$/;
-  const PREVIEW_COPY_CONTROL = 'data-teamcrafters-preview-copy';
-  const PREVIEW_CSV_REQUEST = 'tc-team-builder-preview-csv-request';
-  const PREVIEW_CSV_PAYLOAD = 'tc-team-builder-preview-csv-payload';
-  let previewRosterCapture = null;
 
   // The initial nonce-primary GET is the team's persisted save. Clean it once per page load so a
   // newly armed import starts from the original team parts rather than accumulating prior imports.
@@ -427,203 +418,6 @@
     }
   }
 
-  function isTeamBuilderPreview() {
-    return TEAM_BUILDER_PREVIEW_PATH.test(location.pathname);
-  }
-
-  function objectRecord(value) {
-    return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
-  }
-
-  // EA currently stores these at teamData.roster.playerData and
-  // teamData.frostbiteData.characterVisuals. Keep the alternate paths so a harmless field rename
-  // does not silently make preview copying unavailable.
-  function extractPreviewRoster(payload) {
-    const root = objectRecord(payload);
-    const teamData = objectRecord(root?.teamData) || root;
-    const rosterContainer =
-      objectRecord(teamData?.roster) ||
-      objectRecord(teamData?.rosterData) ||
-      objectRecord(root?.roster) ||
-      objectRecord(root?.rosterData);
-    const rosterData =
-      objectRecord(rosterContainer?.playerData) ||
-      objectRecord(rosterContainer?.rosterData) ||
-      objectRecord(teamData?.playerData) ||
-      objectRecord(teamData?.rosterData) ||
-      objectRecord(root?.rosterData) ||
-      objectRecord(root?.playerData);
-    const characterVisuals =
-      objectRecord(teamData?.frostbiteData?.characterVisuals) ||
-      objectRecord(teamData?.characterVisuals) ||
-      objectRecord(root?.characterVisuals);
-    if (!rosterData || !characterVisuals) return null;
-
-    const rosterIds = Object.keys(rosterData);
-    const visualIds = Object.keys(characterVisuals);
-    if (!rosterIds.length || rosterIds.length !== visualIds.length) return null;
-    if (rosterIds.some((id) => !Object.hasOwn(characterVisuals, id))) return null;
-
-    const teamInfo = objectRecord(teamData?.teamInfos) || {};
-    const teamName = [teamInfo.TEAM_NAME, teamInfo.TEAM_NICKNAME].filter(Boolean).join(' ').trim();
-    return {
-      teamName: teamName || 'Team Builder team',
-      sourceUrl: location.href,
-      playerCount: rosterIds.length,
-      rosterJson: JSON.stringify(rosterData),
-      visualsJson: JSON.stringify(characterVisuals),
-    };
-  }
-
-  function previewCopyControl() {
-    return document.querySelector(`[${PREVIEW_COPY_CONTROL}]`);
-  }
-
-  function renderPreviewCopyControl() {
-    const existing = previewCopyControl();
-    if (!isTeamBuilderPreview()) {
-      existing?.remove();
-      return;
-    }
-    if (!document.body) {
-      document.addEventListener('DOMContentLoaded', renderPreviewCopyControl, { once: true });
-      return;
-    }
-    if (existing) {
-      updatePreviewCopyControl(existing);
-      return;
-    }
-
-    const control = document.createElement('div');
-    control.setAttribute(PREVIEW_COPY_CONTROL, '');
-    Object.assign(control.style, {
-      position: 'fixed', right: '16px', bottom: '16px', zIndex: '2147483647', width: 'min(340px, calc(100vw - 32px))',
-      padding: '12px', border: '1px solid #d7dbe0', borderRadius: '8px', background: '#fff',
-      color: '#1b1f24', boxShadow: '0 4px 16px rgba(0, 0, 0, .28)', fontFamily: 'system-ui, sans-serif',
-    });
-    const detail = document.createElement('div');
-    Object.assign(detail.style, { marginBottom: '9px', fontSize: '12px', lineHeight: '1.4' });
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Copy roster for Team Builder';
-    Object.assign(button.style, {
-      width: '100%', padding: '9px 12px', border: '0', borderRadius: '5px', background: '#1a73e8',
-      color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-    });
-    function requestPreviewAction(button, request, resultEvent, pendingText, successText) {
-      button.disabled = true;
-      button.style.opacity = '0.65';
-      detail.textContent = pendingText;
-      const onResult = (event) => {
-        window.removeEventListener(resultEvent, onResult);
-        const result = event.detail || {};
-        if (result.ok) {
-          detail.textContent = successText(result);
-          return;
-        }
-        detail.textContent = result.error || 'Could not copy this roster. Reload the preview and try again.';
-        button.disabled = false;
-        button.style.opacity = '1';
-      };
-      window.addEventListener(resultEvent, onResult);
-      window.dispatchEvent(new CustomEvent(request));
-    }
-    button.addEventListener('click', () => {
-      requestPreviewAction(
-        button,
-        'tc-team-builder-preview-copy-request',
-        'tc-team-builder-preview-copy-result',
-        'Copying roster…',
-        (result) => {
-          button.textContent = 'Copied';
-          return `Copied ${result.playerCount} players. Open a team and choose the TeamCrafters preset.`;
-        }
-      );
-    });
-    const csvButton = document.createElement('button');
-    csvButton.type = 'button';
-    csvButton.textContent = 'Download CSV';
-    Object.assign(csvButton.style, {
-      width: '100%', marginTop: '8px', padding: '9px 12px', border: '1px solid #1a73e8', borderRadius: '5px',
-      background: '#fff', color: '#1a73e8', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-    });
-    csvButton.addEventListener('click', () => {
-      requestPreviewAction(
-        csvButton,
-        PREVIEW_CSV_REQUEST,
-        'tc-team-builder-preview-csv-result',
-        'Preparing CSV…',
-        (result) => `Downloaded ${result.playerCount}-player CSV. You can edit and import it from the extension.`
-      );
-    });
-    control._teamcraftersPreview = { detail, button, csvButton };
-    control.append(detail, button, csvButton);
-    document.body.appendChild(control);
-    updatePreviewCopyControl(control);
-  }
-
-  function updatePreviewCopyControl(control = previewCopyControl()) {
-    const ui = control?._teamcraftersPreview;
-    if (!ui) return;
-    const ready = Boolean(previewRosterCapture);
-    ui.detail.textContent = ready
-      ? `${previewRosterCapture.playerCount} players ready to copy`
-      : 'Reading roster data…';
-    for (const button of [ui.button, ui.csvButton]) {
-      button.disabled = !ready;
-      button.style.opacity = ready ? '1' : '0.55';
-      button.style.cursor = ready ? 'pointer' : 'wait';
-    }
-  }
-
-  function capturePreviewRoster(payload) {
-    const capture = extractPreviewRoster(payload);
-    if (!capture) {
-      console.warn('[TeamCrafters] nonce-primary did not contain matching rosterData and characterVisuals.');
-      return;
-    }
-    previewRosterCapture = capture;
-    renderPreviewCopyControl();
-  }
-
-  // Team Builder is a single-page app, so the content script survives navigation between a
-  // preview and the editor. Keep the panel scoped to the exact preview route and discard a
-  // previous team's captured data before the next preview's nonce-primary response arrives.
-  function syncPreviewCopyControlSoon() {
-    queueMicrotask(renderPreviewCopyControl);
-  }
-
-  for (const method of ['pushState', 'replaceState']) {
-    const native = history[method];
-    if (typeof native !== 'function' || native.__teamcraftersPreviewRouteSync) continue;
-    const wrapped = function (...args) {
-      const result = native.apply(this, args);
-      syncPreviewCopyControlSoon();
-      return result;
-    };
-    Object.defineProperty(wrapped, '__teamcraftersPreviewRouteSync', { value: true });
-    history[method] = wrapped;
-  }
-  window.addEventListener('popstate', syncPreviewCopyControlSoon);
-  window.addEventListener('hashchange', syncPreviewCopyControlSoon);
-  syncPreviewCopyControlSoon();
-
-  // The isolated bridge owns chrome.storage. It requests this only after the visitor presses the
-  // preview-page Copy button, so viewing a shared preview has no side effects.
-  window.addEventListener('tc-team-builder-preview-copy-request', () => {
-    const detail = isTeamBuilderPreview() && previewRosterCapture
-      ? { ok: true, capture: { ...previewRosterCapture, sourceUrl: location.href } }
-      : { ok: false, error: 'Roster data is still loading. Reload the preview and wait a moment.' };
-    window.dispatchEvent(new CustomEvent('tc-team-builder-preview-copy-payload', { detail }));
-  });
-
-  window.addEventListener(PREVIEW_CSV_REQUEST, () => {
-    const detail = isTeamBuilderPreview() && previewRosterCapture
-      ? { ok: true, capture: { ...previewRosterCapture, sourceUrl: location.href } }
-      : { ok: false, error: 'Roster data is still loading. Reload the preview and wait a moment.' };
-    window.dispatchEvent(new CustomEvent(PREVIEW_CSV_PAYLOAD, { detail }));
-  });
-
   // Imported editable parts deliberately have a readable display name; EA's original part
   // bindings have displayName == ''. Delete every named binding plus its linked part and every
   // uniform that points at one. Removing all three prevents stale, unresolved uniforms from
@@ -945,8 +739,8 @@
         detail.textContent =
           `This adds ${armed.teamName}'s ${info.appendedCount} uniforms to your team and keeps your ` +
           `first uniform as "UNUSED" (Team Builder needs one of your own to load the screen). ` +
-          `Registers ${info.registered.length} new uniform item(s);${editableNote} your roster, ` +
-          `logos, and stadium are untouched.`;
+          `Registers ${info.registered.length} new uniform item(s);${editableNote} your roster and ` +
+          `logos are untouched.`;
       }
 
       const countdownEl = document.createElement('div');
@@ -989,7 +783,167 @@
     });
   }
 
-  // === end uniform replacement ===========================================================
+  function applyArmedMascot(originalText, mascot) {
+    const assetName = typeof mascot?.assetName === 'string' ? mascot.assetName.trim() : '';
+    if (!assetName) throw new Error('The armed mascot has no asset name.');
+
+    const payload = JSON.parse(originalText);
+    const teamInfos = payload?.teamData?.teamInfos;
+    if (!teamInfos || typeof teamInfos !== 'object' || Array.isArray(teamInfos)) {
+      throw new Error('Could not find teamData.teamInfos in this save.');
+    }
+    teamInfos.TEAM_MASCOT_ASSETNAME = assetName;
+    return JSON.stringify(payload);
+  }
+
+  function applyArmedStadium(originalText, stadium) {
+    const stadiumId = Number.isInteger(stadium?.stadiumId) ? String(stadium.stadiumId) : '';
+    if (!stadiumId) throw new Error('The armed stadium has no valid ID.');
+
+    const payload = JSON.parse(originalText);
+    const teamInfos = payload?.teamData?.teamInfos;
+    if (!teamInfos || typeof teamInfos !== 'object' || Array.isArray(teamInfos)) {
+      throw new Error('Could not find teamData.teamInfos in this save.');
+    }
+    const stadiumRecipe = payload?.teamData?.frostbiteData?.stadiumRecipe;
+    if (!stadiumRecipe || typeof stadiumRecipe !== 'object' || Array.isArray(stadiumRecipe)) {
+      throw new Error('Could not find teamData.frostbiteData.stadiumRecipe in this save.');
+    }
+    teamInfos.STADIUM_ID = stadiumId;
+    stadiumRecipe.assetName = `${stadiumId}_stadium_recipe`;
+    return JSON.stringify(payload);
+  }
+
+  // Stadium selections are deliberately confirmed at save time. Besides making the write
+  // explicit, the current value in the dialog gives us a quick way to verify the request is the
+  // expected Team Builder payload while troubleshooting a stadium that does not appear in-game.
+  function promptStadiumSwap(originalText, stadium) {
+    let modifiedText = null;
+    let currentStadiumId = null;
+    let stadiumId = '';
+    let error = null;
+    try {
+      stadiumId = Number.isInteger(stadium?.stadiumId) ? String(stadium.stadiumId) : '';
+      if (!stadiumId) throw new Error('The armed stadium has no valid ID.');
+      const payload = JSON.parse(originalText);
+      const teamInfos = payload?.teamData?.teamInfos;
+      if (!teamInfos || typeof teamInfos !== 'object' || Array.isArray(teamInfos)) {
+        throw new Error('Could not find teamData.teamInfos in this save.');
+      }
+      currentStadiumId = teamInfos.STADIUM_ID ?? '(not set)';
+      modifiedText = applyArmedStadium(originalText, stadium);
+    } catch (err) {
+      error = err;
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let remaining = AUTO_CONTINUE_SECONDS;
+      let timerId = null;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        clearInterval(timerId);
+        try { overlay.remove(); } catch {}
+        resolve(value);
+      };
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText =
+        'position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:2147483647;display:grid;' +
+        'place-items:center;padding:24px;';
+
+      const box = document.createElement('div');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', 'teamcrafters-stadium-save-title');
+      box.style.cssText =
+        'width:min(100%,440px);padding:24px;border:1px solid rgba(255,255,255,.18);border-radius:8px;' +
+        'background:#1c1c1c;color:#fff;box-shadow:0 24px 72px rgba(0,0,0,.55);font-family:inherit;';
+
+      const heading = document.createElement('h2');
+      heading.id = 'teamcrafters-stadium-save-title';
+      heading.textContent = 'Apply this stadium before saving?';
+      heading.style.cssText = 'margin:0 0 10px;font-size:22px;line-height:1.2;';
+
+      const detail = document.createElement('p');
+      detail.style.cssText = 'margin:0;color:#c7c7c7;font-size:14px;line-height:1.5;';
+      if (error) {
+        detail.textContent = `This stadium update cannot be applied: ${error.message} Your save will remain unchanged.`;
+      } else {
+        const name = typeof stadium?.displayName === 'string' && stadium.displayName.trim()
+          ? stadium.displayName.trim()
+          : 'Selected stadium';
+        detail.textContent = `${name} will set STADIUM_ID from "${currentStadiumId}" to "${stadiumId}" and stadiumRecipe.assetName to "${stadiumId}_stadium_recipe" in this save request.`;
+      }
+
+      const countdown = document.createElement('div');
+      countdown.style.cssText = 'margin-top:10px;color:#999;font-size:12px;';
+      const renderCountdown = () => {
+        countdown.textContent = `Saving unchanged in ${remaining}s if you don't choose…`;
+      };
+      renderCountdown();
+
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:22px;';
+
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.textContent = error ? 'Continue unchanged' : 'No, save unchanged';
+      cancel.style.cssText =
+        'min-height:40px;padding:0 15px;border:1px solid #777;border-radius:4px;background:transparent;' +
+        'color:#fff;font:600 14px inherit;cursor:pointer;';
+      cancel.onclick = () => settle(originalText);
+
+      const accept = document.createElement('button');
+      accept.type = 'button';
+      accept.textContent = 'Yes, apply stadium';
+      accept.disabled = modifiedText === null;
+      accept.style.cssText =
+        'min-height:40px;padding:0 15px;border:0;border-radius:4px;font:600 14px inherit;' +
+        (accept.disabled
+          ? 'background:#666;color:#bbb;cursor:not-allowed;'
+          : 'background:#ffde00;color:#111;cursor:pointer;');
+      accept.onclick = () => settle(modifiedText);
+
+      actions.append(cancel, accept);
+      box.append(heading, detail, countdown, actions);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      queueMicrotask(() => (modifiedText === null ? cancel : accept).focus());
+
+      // Default to the safe option when the dialog is left open.
+      timerId = setInterval(() => {
+        if (--remaining <= 0) return settle(originalText);
+        renderCountdown();
+      }, 1000);
+    });
+  }
+
+  // Get all user-armed save changes before reading the body. Returning null lets the caller send
+  // the original request unchanged when neither uniforms, a mascot, nor a stadium are selected.
+  async function chooseSaveUploadText(originalBody) {
+    const [armed, mascot, stadium] = await Promise.all([
+      getArmedUniforms(),
+      getArmedMascot(),
+      getArmedStadium(),
+    ]);
+    const mascotArmed = typeof mascot?.assetName === 'string' && mascot.assetName.trim();
+    const stadiumArmed = Number.isInteger(stadium?.stadiumId);
+    if (!(armed && Array.isArray(armed.uniforms) && armed.uniforms.length) && !mascotArmed && !stadiumArmed) {
+      return null;
+    }
+
+    const originalText = await bodyToText(originalBody);
+    const uniformChoice =
+      armed && Array.isArray(armed.uniforms) && armed.uniforms.length
+        ? await promptUniformSwap(originalText, armed)
+        : originalText;
+    const mascotChoice = mascotArmed ? applyArmedMascot(uniformChoice, mascot) : uniformChoice;
+    return stadiumArmed ? promptStadiumSwap(mascotChoice, stadium) : mascotChoice;
+  }
+
+  // === end save upload modifications ======================================================
 
   // --- get the stored preset payload from ea-bridge.js via a CustomEvent round trip ---
   function getStored() {
@@ -1015,10 +969,49 @@
     });
   }
 
+  // The armed mascot, picked from the bundled reference list on the options page.
+  function getArmedMascot() {
+    return new Promise((resolve) => {
+      function onResponse(e) {
+        window.removeEventListener('tc-mascot-clipboard-response', onResponse);
+        resolve(e.detail);
+      }
+      window.addEventListener('tc-mascot-clipboard-response', onResponse);
+      window.dispatchEvent(new CustomEvent('tc-mascot-clipboard-request'));
+    });
+  }
+
+  // The armed stadium, picked from the bundled reference list on the options page.
+  function getArmedStadium() {
+    return new Promise((resolve) => {
+      function onResponse(e) {
+        window.removeEventListener('tc-stadium-clipboard-response', onResponse);
+        resolve(e.detail);
+      }
+      window.addEventListener('tc-stadium-clipboard-response', onResponse);
+      window.dispatchEvent(new CustomEvent('tc-stadium-clipboard-request'));
+    });
+  }
+
+  // User-created school templates live in extension storage. They are deliberately separate from
+  // the roster preset clipboard: EA reads school templates while setting up a team's identity,
+  // whether or not a roster import is armed.
+  function getSchoolTemplates() {
+    return new Promise((resolve) => {
+      function onResponse(e) {
+        window.removeEventListener('tc-school-templates-response', onResponse);
+        resolve(e.detail);
+      }
+      window.addEventListener('tc-school-templates-response', onResponse);
+      window.dispatchEvent(new CustomEvent('tc-school-templates-request'));
+    });
+  }
+
   // classify a URL: which of our interception points (if any) it is
   function classify(url) {
     if (!url) return null;
     if (url.includes('template_rosters')) return 'template';
+    if (url.includes('my_school_templates.json')) return 'school-templates';
     if (url.includes('plyr-gen-names')) return 'namepool';
     if (url.includes('_teamcrafters.json')) {
       if (url.includes('-character_visuals.json')) return 'visuals';
@@ -1046,6 +1039,44 @@
     return list;
   }
 
+  // The response is EA-owned, so never replace or mutate its built-in entries. Only well-formed
+  // locally-created records are appended. This also makes an outdated or manually edited storage
+  // entry harmless instead of risking the Team Builder setup UI.
+  function appendSchoolTemplates(list, templates) {
+    if (!Array.isArray(list) || !Array.isArray(templates)) return list;
+    const existingIds = new Set(list.map((entry) => entry?.id));
+    const fixedGradeIds = new Set([
+      'CHAMPIONSHIP_CONTENDER_GRADE', 'PROGRAM_TRADITION_GRADE', 'CAMPUS_LIFESTYLE_GRADE',
+      'STADIUM_ATMOSTPHERE_GRADE', 'BRAND_EXPOSURE_GRADE', 'ACADEMIC_PRESTIGE',
+      'ATHLETIC_FACILITIES_GRADE',
+    ]);
+    const automaticGradeIds = new Set([
+      'COACH_STABILITY_GRADE', 'COACH_PRESTIGE_GRADE', 'CONFERENCE_PRESTIGE_GRADE',
+    ]);
+    const valid = templates.filter((template) => {
+      if (!template || !Number.isInteger(template.id) || existingIds.has(template.id)) return false;
+      if (typeof template.displayName !== 'string' || !template.displayName.trim()) return false;
+      if (!Number.isInteger(template.prestige) || template.prestige < 0 || template.prestige > 10) return false;
+      if (!Array.isArray(template.grades) || template.grades.length !== 11) return false;
+      const gradeById = new Map(template.grades.map((grade) => [grade?.id, grade]));
+      if (gradeById.size !== 11) return false;
+      const expectedIds = [...fixedGradeIds, 'PRO_POTENTIAL_GRADE', ...automaticGradeIds];
+      if (expectedIds.some((id) => !gradeById.has(id))) return false;
+      const isValid = template.grades.every((grade) =>
+        grade && typeof grade.id === 'string' && typeof grade.displayName === 'string' &&
+        typeof grade.description === 'string' && Number.isInteger(grade.min) && Number.isInteger(grade.max) &&
+        grade.min >= -1 && grade.min <= 12 && grade.max >= -1 && grade.max <= 12 &&
+        typeof grade.ratingSummary === 'string' &&
+        (fixedGradeIds.has(grade.id) ? grade.min === grade.max && grade.min >= 0 : true) &&
+        (grade.id === 'PRO_POTENTIAL_GRADE' ? grade.min >= grade.max && grade.max >= 0 : true) &&
+        (automaticGradeIds.has(grade.id) ? grade.min === -1 && grade.max === -1 : true)
+      );
+      if (isValid) existingIds.add(template.id);
+      return isValid;
+    });
+    return list.concat(valid);
+  }
+
   function jsonResponse(bodyString) {
     return new Response(bodyString, {
       status: 200,
@@ -1067,7 +1098,6 @@
       const real = await nativeFetch(input, init);
       try {
         const payload = await real.clone().json();
-        capturePreviewRoster(payload);
         const removed = removeInsertedUniforms(payload);
         if (removed.items) console.info('[TeamCrafters] removed prior imported uniform parts:', removed);
         return jsonResponse(JSON.stringify(payload));
@@ -1077,17 +1107,17 @@
       }
     }
 
-    // Save upload — with a uniform set armed, hold it, offer the swap, then send what was chosen.
-    // Nothing armed means the save is never touched.
+    // Save upload — apply any armed uniform set, mascot, and stadium selection before sending.
     if (shouldInterceptUpload(url, method)) {
-      const armed = await getArmedUniforms();
-      if (armed && Array.isArray(armed.uniforms) && armed.uniforms.length) {
-        const originalBody = init && init.body;
-        const text = await bodyToText(originalBody);
-        const chosen = await promptUniformSwap(text, armed);
-        return nativeFetch(input, { ...init, body: textToOriginalType(chosen, originalBody) });
-      }
-      return nativeFetch(input, init);
+      const hasInitBody = Object.prototype.hasOwnProperty.call(init || {}, 'body');
+      const originalBody = hasInitBody
+        ? init.body
+        : input instanceof Request
+          ? await input.clone().text()
+          : null;
+      const chosen = await chooseSaveUploadText(originalBody);
+      if (chosen === null) return nativeFetch(input, init);
+      return nativeFetch(input, { ...init, body: textToOriginalType(chosen, originalBody) });
     }
 
     const kind = String(method).toUpperCase() === 'GET' ? classify(url) : null;
@@ -1107,6 +1137,16 @@
           return jsonResponse(JSON.stringify(list));
         }
       } catch { /* fall through */ }
+      return real;
+    }
+
+    if (kind === 'school-templates') {
+      const real = await nativeFetch(input, init);
+      try {
+        const list = await real.clone().json();
+        const templates = await getSchoolTemplates();
+        return jsonResponse(JSON.stringify(appendSchoolTemplates(list, templates)));
+      } catch { /* keep EA's original response if either source cannot be read */ }
       return real;
     }
 
@@ -1177,7 +1217,6 @@
       nativeFetch(info.url)
         .then((response) => response.json())
         .then((payload) => {
-          capturePreviewRoster(payload);
           const removed = removeInsertedUniforms(payload);
           if (removed.items) console.info('[TeamCrafters] removed prior imported uniform parts:', removed);
           synthesize(xhr, info.url, JSON.stringify(payload));
@@ -1189,21 +1228,14 @@
       return;
     }
 
-    // Save upload (this is the path EA actually uses). With a uniform set armed, hold the
-    // synchronous send, ask, then send the chosen body. Nothing armed means the save goes through
-    // untouched. On any failure send the original rather than dropping the save.
+    // Save upload (this is the path EA actually uses). Apply any armed uniform set, mascot, and
+    // stadium selection, then send the chosen body. On any failure send the original rather than
+    // dropping the save.
     if (info && shouldInterceptUpload(info.url, info.method)) {
-      getArmedUniforms()
-        .then((armed) => {
-          if (!armed || !Array.isArray(armed.uniforms) || !armed.uniforms.length) {
-            return origSend.call(xhr, body);
-          }
-          return bodyToText(body)
-            .then((text) => promptUniformSwap(text, armed))
-            .then((chosen) => origSend.call(xhr, textToOriginalType(chosen, body)));
-        })
+      chooseSaveUploadText(body)
+        .then((chosen) => origSend.call(xhr, chosen === null ? body : textToOriginalType(chosen, body)))
         .catch((err) => {
-          console.error('[TeamCrafters] uniform swap failed, saving unchanged:', err);
+          console.error('[TeamCrafters] save update failed, saving unchanged:', err);
           origSend.call(xhr, body);
         });
       return;
@@ -1223,6 +1255,16 @@
             .then((list) => {
               if (Array.isArray(list) && armed) applyPreset(list, stored);
               synthesize(xhr, info.url, JSON.stringify(list));
+            })
+            .catch(() => origSend.call(xhr, body));
+        }
+        if (kind === 'school-templates') {
+          // Preserve the CDN result exactly, with only valid user templates appended.
+          return nativeFetch(info.url)
+            .then((r) => r.json())
+            .then(async (list) => {
+              const templates = await getSchoolTemplates();
+              synthesize(xhr, info.url, JSON.stringify(appendSchoolTemplates(list, templates)));
             })
             .catch(() => origSend.call(xhr, body));
         }

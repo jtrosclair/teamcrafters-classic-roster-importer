@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.6.0 — 2026-08-08
+
+> **Note from Jerry:** There are many untested/unverified changes in this release, mostly due to
+> pending Team Builder patches that can ultimately break functionality in this extension. Please
+> continue to use at your own risk until it has been verified that this extension will properly
+> work with Team Builder.
+
+### Highlights
+
+- Copy a public TeamCrafters **custom team** or CFB 27 **Team Builder directory team** straight
+  into Team Builder. Its original roster, player appearances, and equipment are preserved whenever
+  an EA asset is available. Those pages also offer **Download CSV** for the roster.
+- Copy actions now start only from TeamCrafters. The former EA Team Builder preview-page copy tool
+  has been retired, so use a TeamCrafters classic, custom-team, or Team Builder directory page as
+  the source instead.
+- Pick a **mascot** from the new extension tools, then apply it when you save in Team Builder.
+  Every save change remains explicitly confirmed.
+- Try the **experimental stadium picker** to apply a stadium on your next save. Not all stadiums
+  have been tested yet, so confirm the result in Team Builder before relying on it.
+- Create reusable **school templates** in the extension and find them alongside EA's built-in
+  templates during Team Builder setup.
+- CSV roster imports and exports now retain a player's hometown and home state.
+
+### Upgrade
+
+Reload the extension in `chrome://extensions`, then reload any open TeamCrafters and Team Builder
+tabs. Your copied roster, uniform selection, and existing extension settings are retained.
+
 ## v0.5.0 — 2026-08-03
 
 ### Highlights

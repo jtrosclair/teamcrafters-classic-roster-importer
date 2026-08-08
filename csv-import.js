@@ -34,6 +34,20 @@
     SR: 3, 'SENIOR': 3,
   };
 
+  // PLYR_HOME_STATE uses the alphabetically ordered U.S. states, followed by Non-US. Keep this
+  // list here (rather than just accepting a numeric range) so the CSV validation and UI can name
+  // the selected state without maintaining two separate mappings.
+  const HOME_TOWN_STATE_NAMES = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma',
+    'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee',
+    'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
+    'Non-US',
+  ];
+
   // Skin tone (0-7) -> PLYR_PORTRAIT. A CSV may instead provide an exact portraitId; that wins
   // over this fallback. roster-merge.js pairs every accepted portrait with its head recipe and
   // complexion from the bundled EA catalog.
@@ -273,6 +287,26 @@
         warnings.push(`Row ${line} (${first} ${last}): no weight, kept the template's.`);
       }
 
+      // These columns are optional. null intentionally means "do not overwrite the paired base
+      // template slot" when roster-merge.js applies the imported player.
+      const homeTown = String(r.homeTown ?? '').trim() || null;
+      const homeTownStateRaw = String(r.homeTownState ?? '').trim();
+      let homeTownState = null;
+      if (homeTownStateRaw) {
+        if (!/^\d+$/.test(homeTownStateRaw) ||
+            Number(homeTownStateRaw) >= HOME_TOWN_STATE_NAMES.length) {
+          if (errors.length < MAX_COLLECTED_ERRORS) {
+            errors.push(
+              `Row ${line} (${first} ${last}): homeTownState "${r.homeTownState}" must be a whole-number ` +
+              `state ID from 0 (${HOME_TOWN_STATE_NAMES[0]}) to ${HOME_TOWN_STATE_NAMES.length - 1} ` +
+              `(${HOME_TOWN_STATE_NAMES[HOME_TOWN_STATE_NAMES.length - 1]}).`
+            );
+          }
+        } else {
+          homeTownState = Number(homeTownStateRaw);
+        }
+      }
+
       players.push({
         sourcePlayerId: line,
         firstName: first,
@@ -291,6 +325,8 @@
         archetypeId: null,
         portraitId,
         skinToneCode: skin,
+        homeTown,
+        homeTownState,
         ratings,
       });
     });
@@ -365,6 +401,7 @@
     RATING_KEYS,
     POSITION_ABBREV_TO_EA_CODE,
     CLASS_YEAR_TO_CODE,
+    HOME_TOWN_STATE_NAMES,
     PORTRAIT_ID_BY_SKIN_TONE,
     POSITION_MINIMUMS,
     POSITION_GROUP_MINIMUMS,

@@ -29,7 +29,8 @@
 
   const BIO_COLUMNS = [
     'firstName', 'lastName', 'position', 'jerseyNumber', 'classYear',
-    'heightInches', 'weightLbs', 'isLefty', 'skinTone', 'portraitId', 'devTrait',
+    'heightInches', 'weightLbs', 'isLefty', 'skinTone', 'portraitId', 'devTrait', 'homeTown',
+    'homeTownState',
   ];
 
   // OVR is derived on import and a supplied value is rejected, so it never appears in the file.
@@ -108,6 +109,8 @@
       // spreadsheet intentionally restores the simple skin-tone fallback.
       portraitId: portrait,
       devTrait: player.devTrait,
+      homeTown: player.homeTown,
+      homeTownState: player.homeTownState,
     };
 
     const ratings = player.ratings || {};
@@ -194,6 +197,8 @@
         isLefty: String(player.PLYR_HANDEDNESS) === '1',
         devTrait: numberOrNull(player.PLYR_TRAITDEVELOPMENT),
         portraitId: player.PLYR_PORTRAIT == null ? null : String(player.PLYR_PORTRAIT),
+        homeTown: player.PLYR_HOME_TOWN == null ? null : String(player.PLYR_HOME_TOWN),
+        homeTownState: numberOrNull(player.PLYR_HOME_STATE),
         ratings,
       };
     });

@@ -1,0 +1,617 @@
+[
+    {
+        "TMAN":  "AFA",
+        "TeamName":  "Air Force",
+        "MascotName":  "The Bird"
+    },
+    {
+        "TMAN":  "AKR",
+        "TeamName":  "Akron",
+        "MascotName":  "Zippy"
+    },
+    {
+        "TMAN":  "ALA",
+        "TeamName":  "Alabama",
+        "MascotName":  "Big Al"
+    },
+    {
+        "TMAN":  "APP",
+        "TeamName":  "Appalachian State",
+        "MascotName":  "Yosef"
+    },
+    {
+        "TMAN":  "ARIZ",
+        "TeamName":  "Arizona",
+        "MascotName":  "Wilbur"
+    },
+    {
+        "TMAN":  "ARK",
+        "TeamName":  "Arkansas",
+        "MascotName":  "Big Red"
+    },
+    {
+        "TMAN":  "ARMY",
+        "TeamName":  "Army",
+        "MascotName":  "BlackJack"
+    },
+    {
+        "TMAN":  "ARST",
+        "TeamName":  "Arkansas State",
+        "MascotName":  "Howl"
+    },
+    {
+        "TMAN":  "ASU",
+        "TeamName":  "Arizona State",
+        "MascotName":  "Sparky"
+    },
+    {
+        "TMAN":  "AUB",
+        "TeamName":  "Auburn",
+        "MascotName":  "Aubie"
+    },
+    {
+        "TMAN":  "BALL",
+        "TeamName":  "Ball State",
+        "MascotName":  "Charlie"
+    },
+    {
+        "TMAN":  "BAY",
+        "TeamName":  "Baylor",
+        "MascotName":  "Bruiser"
+    },
+    {
+        "TMAN":  "BC",
+        "TeamName":  "Boston College",
+        "MascotName":  "Baldwin"
+    },
+    {
+        "TMAN":  "BGSU",
+        "TeamName":  "Bowling Green",
+        "MascotName":  "Freddie"
+    },
+    {
+        "TMAN":  "BSU",
+        "TeamName":  "Boise State",
+        "MascotName":  "Buster"
+    },
+    {
+        "TMAN":  "BUFF",
+        "TeamName":  "Buffalo",
+        "MascotName":  "Victor E."
+    },
+    {
+        "TMAN":  "BYU",
+        "TeamName":  "BYU",
+        "MascotName":  "Cosmo"
+    },
+    {
+        "TMAN":  "CAL",
+        "TeamName":  "California",
+        "MascotName":  "Oski"
+    },
+    {
+        "TMAN":  "CCAR",
+        "TeamName":  "Coastal Carolina",
+        "MascotName":  "Chauncey"
+    },
+    {
+        "TMAN":  "CHAR",
+        "TeamName":  "Charlotte",
+        "MascotName":  "Norm"
+    },
+    {
+        "TMAN":  "CIN",
+        "TeamName":  "Cincinnati",
+        "MascotName":  "Bearcat"
+    },
+    {
+        "TMAN":  "CLEM",
+        "TeamName":  "Clemson",
+        "MascotName":  "The Tiger"
+    },
+    {
+        "TMAN":  "COLO",
+        "TeamName":  "Colorado",
+        "MascotName":  "Chip"
+    },
+    {
+        "TMAN":  "CONN",
+        "TeamName":  "UConn",
+        "MascotName":  "Jonathan"
+    },
+    {
+        "TMAN":  "CSU",
+        "TeamName":  "Colorado State",
+        "MascotName":  "CAM"
+    },
+    {
+        "TMAN":  "DEL",
+        "TeamName":  "Delaware",
+        "MascotName":  "YoUDee"
+    },
+    {
+        "TMAN":  "DUKE",
+        "TeamName":  "Duke",
+        "MascotName":  "Blue Devil"
+    },
+    {
+        "TMAN":  "ECU",
+        "TeamName":  "East Carolina",
+        "MascotName":  "PeeDee"
+    },
+    {
+        "TMAN":  "EMU",
+        "TeamName":  "Eastern Michigan",
+        "MascotName":  "Swoop"
+    },
+    {
+        "TMAN":  "FAU",
+        "TeamName":  "Florida Atlantic",
+        "MascotName":  "Owlsley"
+    },
+    {
+        "TMAN":  "FIU",
+        "TeamName":  "Florida International",
+        "MascotName":  "Roary"
+    },
+    {
+        "TMAN":  "FLA",
+        "TeamName":  "Florida",
+        "MascotName":  "Albert"
+    },
+    {
+        "TMAN":  "FRES",
+        "TeamName":  "Fresno State",
+        "MascotName":  "TimeOut"
+    },
+    {
+        "TMAN":  "GASO",
+        "TeamName":  "Georgia Southern",
+        "MascotName":  "Gus"
+    },
+    {
+        "TMAN":  "GSU",
+        "TeamName":  "Georgia State",
+        "MascotName":  "Pounce"
+    },
+    {
+        "TMAN":  "GT",
+        "TeamName":  "Georgia Tech",
+        "MascotName":  "Buzz"
+    },
+    {
+        "TMAN":  "HOU",
+        "TeamName":  "Houston",
+        "MascotName":  "Shasta"
+    },
+    {
+        "TMAN":  "IND",
+        "TeamName":  "Indiana",
+        "MascotName":  "Hoosier"
+    },
+    {
+        "TMAN":  "IOWA",
+        "TeamName":  "Iowa",
+        "MascotName":  "Herky"
+    },
+    {
+        "TMAN":  "ISU",
+        "TeamName":  "Iowa State",
+        "MascotName":  "Cy"
+    },
+    {
+        "TMAN":  "JMU",
+        "TeamName":  "James Madison",
+        "MascotName":  "Duke"
+    },
+    {
+        "TMAN":  "JVST",
+        "TeamName":  "Jacksonville State",
+        "MascotName":  "Cocky"
+    },
+    {
+        "TMAN":  "KENN",
+        "TeamName":  "Kennesaw State",
+        "MascotName":  "Scrappy"
+    },
+    {
+        "TMAN":  "KENT",
+        "TeamName":  "Kent State",
+        "MascotName":  "Flash"
+    },
+    {
+        "TMAN":  "KSU",
+        "TeamName":  "Kansas State",
+        "MascotName":  "Willie"
+    },
+    {
+        "TMAN":  "KU",
+        "TeamName":  "Kansas",
+        "MascotName":  "Big Jay"
+    },
+    {
+        "TMAN":  "LIB",
+        "TeamName":  "Liberty",
+        "MascotName":  "Sparky"
+    },
+    {
+        "TMAN":  "LOU",
+        "TeamName":  "Louisville",
+        "MascotName":  "Louie"
+    },
+    {
+        "TMAN":  "LSU",
+        "TeamName":  "LSU",
+        "MascotName":  "Mike"
+    },
+    {
+        "TMAN":  "LT",
+        "TeamName":  "Louisiana Tech",
+        "MascotName":  "Champ"
+    },
+    {
+        "TMAN":  "MEM",
+        "TeamName":  "Memphis",
+        "MascotName":  "Pouncer"
+    },
+    {
+        "TMAN":  "MIA",
+        "TeamName":  "Miami",
+        "MascotName":  "Sebastian"
+    },
+    {
+        "TMAN":  "MIAOH",
+        "TeamName":  "Miami University",
+        "MascotName":  "Swoop"
+    },
+    {
+        "TMAN":  "MINN",
+        "TeamName":  "Minnesota",
+        "MascotName":  "Goldy Gopher"
+    },
+    {
+        "TMAN":  "MIZZ",
+        "TeamName":  "Missouri",
+        "MascotName":  "Truman"
+    },
+    {
+        "TMAN":  "MOST",
+        "TeamName":  "Missouri State",
+        "MascotName":  "Boomer"
+    },
+    {
+        "TMAN":  "MRSH",
+        "TeamName":  "Marshall",
+        "MascotName":  "Marco"
+    },
+    {
+        "TMAN":  "MSST",
+        "TeamName":  "Mississippi State",
+        "MascotName":  "Bully"
+    },
+    {
+        "TMAN":  "MSU",
+        "TeamName":  "Michigan State",
+        "MascotName":  "Sparty"
+    },
+    {
+        "TMAN":  "MTSU",
+        "TeamName":  "Middle Tennessee",
+        "MascotName":  "Lightning"
+    },
+    {
+        "TMAN":  "NAVY",
+        "TeamName":  "Navy",
+        "MascotName":  "Bill"
+    },
+    {
+        "TMAN":  "NCST",
+        "TeamName":  "NC State",
+        "MascotName":  "Ms. Wuf"
+    },
+    {
+        "TMAN":  "ND",
+        "TeamName":  "Notre Dame",
+        "MascotName":  "Leprechaun"
+    },
+    {
+        "TMAN":  "NEB",
+        "TeamName":  "Nebraska",
+        "MascotName":  "Herbie"
+    },
+    {
+        "TMAN":  "NEV",
+        "TeamName":  "Nevada",
+        "MascotName":  "Alphie"
+    },
+    {
+        "TMAN":  "NIU",
+        "TeamName":  "Northern Illinois",
+        "MascotName":  "Victor E."
+    },
+    {
+        "TMAN":  "NW",
+        "TeamName":  "Northwestern",
+        "MascotName":  "Willie"
+    },
+    {
+        "TMAN":  "ODU",
+        "TeamName":  "Old Dominion",
+        "MascotName":  "Big Blue"
+    },
+    {
+        "TMAN":  "OHIO",
+        "TeamName":  "Ohio",
+        "MascotName":  "Rufus"
+    },
+    {
+        "TMAN":  "OKST",
+        "TeamName":  "Oklahoma State",
+        "MascotName":  "Pistol Pete"
+    },
+    {
+        "TMAN":  "ORE",
+        "TeamName":  "Oregon",
+        "MascotName":  "The Duck"
+    },
+    {
+        "TMAN":  "ORST",
+        "TeamName":  "Oregon State",
+        "MascotName":  "Benny Beaver"
+    },
+    {
+        "TMAN":  "OSU",
+        "TeamName":  "Ohio State",
+        "MascotName":  "Brutus"
+    },
+    {
+        "TMAN":  "OU",
+        "TeamName":  "Oklahoma",
+        "MascotName":  "Boomer"
+    },
+    {
+        "TMAN":  "PITT",
+        "TeamName":  "Pittsburgh",
+        "MascotName":  "Roc"
+    },
+    {
+        "TMAN":  "PSU",
+        "TeamName":  "Penn State",
+        "MascotName":  "Nittany Lion"
+    },
+    {
+        "TMAN":  "PUR",
+        "TeamName":  "Purdue",
+        "MascotName":  "Purdue Pete"
+    },
+    {
+        "TMAN":  "RICE",
+        "TeamName":  "Rice",
+        "MascotName":  "Sammy"
+    },
+    {
+        "TMAN":  "RUTG",
+        "TeamName":  "Rutgers",
+        "MascotName":  "Sir Henry"
+    },
+    {
+        "TMAN":  "SC",
+        "TeamName":  "South Carolina",
+        "MascotName":  "Cocky"
+    },
+    {
+        "TMAN":  "SHSU",
+        "TeamName":  "Sam Houston",
+        "MascotName":  "Sammy"
+    },
+    {
+        "TMAN":  "SJSU",
+        "TeamName":  "San Jose State",
+        "MascotName":  "Sammy"
+    },
+    {
+        "TMAN":  "SMU",
+        "TeamName":  "SMU",
+        "MascotName":  "Peruna"
+    },
+    {
+        "TMAN":  "STAN",
+        "TeamName":  "Stanford",
+        "MascotName":  "Tree"
+    },
+    {
+        "TMAN":  "SYR",
+        "TeamName":  "Syracuse",
+        "MascotName":  "Otto"
+    },
+    {
+        "TMAN":  "TCU",
+        "TeamName":  "TCU",
+        "MascotName":  "Super Frog"
+    },
+    {
+        "TMAN":  "TEM",
+        "TeamName":  "Temple",
+        "MascotName":  "Hooter T"
+    },
+    {
+        "TMAN":  "TENN",
+        "TeamName":  "Tennessee",
+        "MascotName":  "Smokey"
+    },
+    {
+        "TMAN":  "TEX",
+        "TeamName":  "Texas",
+        "MascotName":  "Hook \u0027em"
+    },
+    {
+        "TMAN":  "TLSA",
+        "TeamName":  "Tulsa",
+        "MascotName":  "Gus T"
+    },
+    {
+        "TMAN":  "TOL",
+        "TeamName":  "Toledo",
+        "MascotName":  "Rocky"
+    },
+    {
+        "TMAN":  "TROY",
+        "TeamName":  "Troy",
+        "MascotName":  "T-Roy"
+    },
+    {
+        "TMAN":  "TTU",
+        "TeamName":  "Texas Tech",
+        "MascotName":  "Raider Red"
+    },
+    {
+        "TMAN":  "TULN",
+        "TeamName":  "Tulane",
+        "MascotName":  "Riptide"
+    },
+    {
+        "TMAN":  "TXST",
+        "TeamName":  "Texas State",
+        "MascotName":  "Boko"
+    },
+    {
+        "TMAN":  "UAB",
+        "TeamName":  "UAB",
+        "MascotName":  "Blaze"
+    },
+    {
+        "TMAN":  "UCF",
+        "TeamName":  "UCF",
+        "MascotName":  "Knightro"
+    },
+    {
+        "TMAN":  "UCLA",
+        "TeamName":  "UCLA",
+        "MascotName":  "Joe Bruin"
+    },
+    {
+        "TMAN":  "UGA",
+        "TeamName":  "Georgia",
+        "MascotName":  "Hairy Dawg"
+    },
+    {
+        "TMAN":  "UK",
+        "TeamName":  "Kentucky",
+        "MascotName":  "Wildcat"
+    },
+    {
+        "TMAN":  "ULM",
+        "TeamName":  "UL Monroe",
+        "MascotName":  "Ace"
+    },
+    {
+        "TMAN":  "UMASS",
+        "TeamName":  "UMass",
+        "MascotName":  "Sam"
+    },
+    {
+        "TMAN":  "UMD",
+        "TeamName":  "Maryland",
+        "MascotName":  "Testudo"
+    },
+    {
+        "TMAN":  "UNC",
+        "TeamName":  "North Carolina",
+        "MascotName":  "Rameses"
+    },
+    {
+        "TMAN":  "UNT",
+        "TeamName":  "North Texas",
+        "MascotName":  "Scrappy"
+    },
+    {
+        "TMAN":  "USA",
+        "TeamName":  "South Alabama",
+        "MascotName":  "South Paw"
+    },
+    {
+        "TMAN":  "USF",
+        "TeamName":  "USF",
+        "MascotName":  "Rocky"
+    },
+    {
+        "TMAN":  "USM",
+        "TeamName":  "Southern Mississippi",
+        "MascotName":  "Seymour"
+    },
+    {
+        "TMAN":  "USU",
+        "TeamName":  "Utah State",
+        "MascotName":  "Big Blue"
+    },
+    {
+        "TMAN":  "UTAH",
+        "TeamName":  "Utah",
+        "MascotName":  "Swoop"
+    },
+    {
+        "TMAN":  "UTEP",
+        "TeamName":  "UTEP",
+        "MascotName":  "Paydirt Pete"
+    },
+    {
+        "TMAN":  "UTSA",
+        "TeamName":  "UTSA",
+        "MascotName":  "Rowdy"
+    },
+    {
+        "TMAN":  "UVA",
+        "TeamName":  "Virginia",
+        "MascotName":  "Cavman"
+    },
+    {
+        "TMAN":  "VAN",
+        "TeamName":  "Vanderbilt",
+        "MascotName":  "Commodorr"
+    },
+    {
+        "TMAN":  "VT",
+        "TeamName":  "Virginia Tech",
+        "MascotName":  "Hokiebird"
+    },
+    {
+        "TMAN":  "WAKE",
+        "TeamName":  "Wake Forest",
+        "MascotName":  "Demon"
+    },
+    {
+        "TMAN":  "WASH",
+        "TeamName":  "Washington",
+        "MascotName":  "Harry"
+    },
+    {
+        "TMAN":  "WIS",
+        "TeamName":  "Wisconsin",
+        "MascotName":  "Bucky"
+    },
+    {
+        "TMAN":  "WKU",
+        "TeamName":  "Western Kentucky",
+        "MascotName":  "Big Red"
+    },
+    {
+        "TMAN":  "WMU",
+        "TeamName":  "Western Michigan",
+        "MascotName":  "Buster"
+    },
+    {
+        "TMAN":  "WSU",
+        "TeamName":  "Washington State",
+        "MascotName":  "Butch T"
+    },
+    {
+        "TMAN":  "WVU",
+        "TeamName":  "West Virginia",
+        "MascotName":  "Mountaineer"
+    },
+    {
+        "TMAN":  "WYO",
+        "TeamName":  "Wyoming",
+        "MascotName":  "Pistol Pete"
+    }
+]

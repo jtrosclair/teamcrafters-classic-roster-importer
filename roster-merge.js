@@ -69,6 +69,90 @@
     return { recipe: entry.recipe, skinTone: entry.complexionId };
   }
 
+  // A TeamCrafters custom-team page exposes the original Team Builder player rows, rather than
+  // the normalized classic-roster export. Convert that public EA shape into the one mergeIntoSlot
+  // consumes so both sources use the same safe base-template appearance pairing.
+  function buildClipboardFromEaRoster(playerData, source = {}) {
+    const entries = Array.isArray(playerData)
+      ? playerData.map((player, index) => [String(player?.PLYR_ID ?? index + 1), player])
+      : Object.entries(playerData || {});
+    if (!entries.length || entries.length > 85) {
+      throw new Error(`Expected a Team Builder roster with 1–85 players; found ${entries.length}.`);
+    }
+
+    const numberOrNull = (value) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : null;
+    };
+    const rating = (player, key, label) => {
+      const value = numberOrNull(player[`PLYR_${EA_WIRE_SUFFIX_BY_MODERN_KEY[key]}`]);
+      if (value == null || value < 0 || value > 99) {
+        throw new Error(`${label} has an invalid ${key} rating.`);
+      }
+      return Math.round(value);
+    };
+
+    const players = entries.map(([sourcePlayerId, player], index) => {
+      const label = `Player ${index + 1}`;
+      if (!player || typeof player !== 'object' || Array.isArray(player)) {
+        throw new Error(`${label} is not a valid Team Builder player.`);
+      }
+      const positionCode = numberOrNull(player.PLYR_POSITION);
+      if (!Number.isInteger(positionCode) || positionCode < 0 || positionCode > 20) {
+        throw new Error(`${label} has an invalid position.`);
+      }
+      const rawWeight = numberOrNull(player.PLYR_WEIGHT);
+      if (rawWeight == null) throw new Error(`${label} has an invalid weight.`);
+
+      const ratings = {};
+      for (const key of Object.keys(EA_WIRE_SUFFIX_BY_MODERN_KEY)) {
+        ratings[key] = rating(player, key, label);
+      }
+
+      const schoolYear = numberOrNull(player.PLYR_SCHOOLYEAR);
+      const portrait = player.PLYR_PORTRAIT == null || player.PLYR_PORTRAIT === ''
+        ? null
+        : String(player.PLYR_PORTRAIT);
+      return {
+        sourcePlayerId,
+        firstName: String(player.PLYR_FIRSTNAME || ''),
+        lastName: String(player.PLYR_LASTNAME || ''),
+        jerseyNumber: numberOrNull(player.PLYR_JERSEYNUM) ?? 0,
+        positionCode,
+        schoolYearCode: Number.isInteger(schoolYear) && schoolYear >= 0 && schoolYear <= 3 ? schoolYear : 0,
+        heightInches: numberOrNull(player.PLYR_HEIGHT),
+        weightLbs: rawWeight + WEIGHT_WIRE_OFFSET,
+        isLefty: String(player.PLYR_HANDEDNESS) === '1',
+        devTrait: numberOrNull(player.PLYR_TRAITDEVELOPMENT),
+        archetypeId: numberOrNull(player.PLYR_PLAYERTYPE),
+        portraitId: portrait,
+        homeTown: player.PLYR_HOME_TOWN == null ? null : String(player.PLYR_HOME_TOWN),
+        homeTownState: numberOrNull(player.PLYR_HOME_STATE),
+        ratings,
+      };
+    });
+
+    players.sort((a, b) =>
+      a.positionCode - b.positionCode || (b.ratings.OVR ?? 0) - (a.ratings.OVR ?? 0));
+
+    const teamName = typeof source.teamName === 'string' && source.teamName.trim()
+      ? source.teamName.trim().slice(0, 120)
+      : 'TeamCrafters custom team';
+    return {
+      schemaVersion: 1,
+      source: {
+        kind: 'custom-team',
+        game: 'CFB27',
+        teamName,
+        sourceUrl: typeof source.sourceUrl === 'string' ? source.sourceUrl : null,
+      },
+      copiedAt: new Date().toISOString(),
+      playerCount: players.length,
+      players,
+      warnings: [],
+    };
+  }
+
   // Overwrite one base roster slot + its paired visuals entry with a TeamCrafters player.
   // Names, bio, ratings, position, PLYR_PORTRAIT, genericHeadName, and skinTone may change. The
   // remaining appearance and asset fields (including genericHead, assetName, and loadouts) stay
@@ -83,6 +167,8 @@
     if (tc.isLefty != null) rosterEntry.PLYR_HANDEDNESS = tc.isLefty ? '1' : '0';
     if (tc.devTrait != null) rosterEntry.PLYR_TRAITDEVELOPMENT = String(tc.devTrait);
     if (tc.archetypeId != null) rosterEntry.PLYR_PLAYERTYPE = String(tc.archetypeId);
+    if (tc.homeTown != null) rosterEntry.PLYR_HOME_TOWN = tc.homeTown;
+    if (tc.homeTownState != null) rosterEntry.PLYR_HOME_STATE = String(tc.homeTownState);
     if (overwritePosition) rosterEntry.PLYR_POSITION = String(tc.positionCode);
 
     for (const [modernKey, wireSuffix] of Object.entries(EA_WIRE_SUFFIX_BY_MODERN_KEY)) {
@@ -194,6 +280,7 @@
 
   window.TCRosterMerge = {
     buildPresetPayload,
+    buildClipboardFromEaRoster,
     loadPortraitCatalog,
     ROSTER_URL,
     VISUALS_URL,

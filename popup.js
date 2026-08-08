@@ -10,6 +10,8 @@
 
 const STORAGE_KEY = 'tcRosterClipboard';
 const UNIFORM_KEY = 'tcUniformClipboard';
+const MASCOT_KEY = 'tcMascotClipboard';
+const STADIUM_KEY = 'tcStadiumClipboard';
 const UPDATE_CACHE_KEY = 'tcReleaseUpdateCache';
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const RELEASES_API = 'https://api.github.com/repos/jtrosclair/teamcrafters-classic-roster-importer/releases/latest';
@@ -92,9 +94,7 @@ function render(stored) {
   const stats = stored.stats || {};
   const extra = [];
   if (stats.unplacedPlayers) extra.push(`${stats.unplacedPlayers} players didn’t fit`);
-  const sourceLabel = stats.copiedFromTeamBuilder
-    ? 'View source Team Builder team →'
-    : 'Preview roster on TeamCrafters →';
+  const sourceLabel = 'View source team on TeamCrafters →';
 
   statusEl.className = 'status-card';
   statusEl.innerHTML = `
@@ -128,12 +128,60 @@ function renderUniforms(armed) {
   clearBtn.style.display = 'block';
 }
 
+function renderMascot(armed) {
+  const el = document.getElementById('mascotStatus');
+  const clearBtn = document.getElementById('clearMascotBtn');
+
+  if (!armed?.assetName) {
+    el.className = 'status-card empty';
+    el.innerHTML = '<div>No team mascot selected.</div>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+
+  el.className = 'status-card';
+  el.innerHTML = `
+    <div class="team-name">${armed.teamName ?? 'Selected team'} mascot</div>
+    <div class="meta">${armed.mascotName ?? 'Mascot'} · ${armed.assetName}</div>
+    <div class="meta">Save in Team Builder to apply.</div>
+  `;
+  clearBtn.style.display = 'block';
+}
+
+function renderStadium(armed) {
+  const el = document.getElementById('stadiumStatus');
+  const clearBtn = document.getElementById('clearStadiumBtn');
+
+  if (!Number.isInteger(armed?.stadiumId)) {
+    el.className = 'status-card empty';
+    el.innerHTML = '<div>No stadium selected.</div>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+
+  el.className = 'status-card';
+  el.innerHTML = `
+    <div class="team-name">${armed.displayName ?? 'Selected stadium'}</div>
+    <div class="meta">Stadium ID · ${armed.stadiumId}</div>
+    <div class="meta">Save in Team Builder to apply.</div>
+  `;
+  clearBtn.style.display = 'block';
+}
+
 chrome.storage.local.get(STORAGE_KEY, (result) => {
   render(result[STORAGE_KEY] || null);
 });
 
 chrome.storage.local.get(UNIFORM_KEY, (result) => {
   renderUniforms(result[UNIFORM_KEY] || null);
+});
+
+chrome.storage.local.get(MASCOT_KEY, (result) => {
+  renderMascot(result[MASCOT_KEY] || null);
+});
+
+chrome.storage.local.get(STADIUM_KEY, (result) => {
+  renderStadium(result[STADIUM_KEY] || null);
 });
 
 checkForUpdate();
@@ -144,6 +192,14 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 document.getElementById('clearUniformBtn').addEventListener('click', () => {
   chrome.storage.local.remove(UNIFORM_KEY, () => renderUniforms(null));
+});
+
+document.getElementById('clearMascotBtn').addEventListener('click', () => {
+  chrome.storage.local.remove(MASCOT_KEY, () => renderMascot(null));
+});
+
+document.getElementById('clearStadiumBtn').addEventListener('click', () => {
+  chrome.storage.local.remove(STADIUM_KEY, () => renderStadium(null));
 });
 
 // Open the options page on a specific tab. openOptionsPage() can't carry a hash, so target the
@@ -160,6 +216,21 @@ document.getElementById('csvLink').addEventListener('click', (e) => {
 document.getElementById('uniformLink').addEventListener('click', (e) => {
   e.preventDefault();
   openOptions('panel-uniforms');
+});
+
+document.getElementById('mascotLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  openOptions('panel-mascot');
+});
+
+document.getElementById('stadiumLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  openOptions('panel-stadium');
+});
+
+document.getElementById('schoolTemplatesLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  openOptions('panel-school-templates');
 });
 
 document.getElementById('equipmentLink').addEventListener('click', (e) => {

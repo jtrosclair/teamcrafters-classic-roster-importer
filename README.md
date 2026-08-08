@@ -1,8 +1,8 @@
 # TeamCrafters Classic Roster Importer
 
-A Chrome extension that copies a **classic** college football roster (NCAA 14 and older) from
-[TeamCrafters](https://www.teamcrafters.net) into **EA Sports College Football 27 Team Builder**,
-by adding it to Team Builder's own roster-presets list.
+A Chrome extension that copies a classic college football roster (NCAA 14 and older) or a public
+custom-team roster from [TeamCrafters](https://www.teamcrafters.net) into **EA Sports College
+Football 27 Team Builder**, by adding it to Team Builder's own roster-presets list.
 
 Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Electronic Arts.
 
@@ -19,9 +19,10 @@ Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Elec
 
 ## What it does
 
-Pick any classic team on TeamCrafters (say, 2012 Alabama). Click a button. Then, in EA's Team
-Builder, that roster shows up in the presets list — pick it, and the whole roster is replaced with
-those real players: names, ratings, positions, class years, height/weight, and skin tones.
+Pick any classic team on TeamCrafters (say, 2012 Alabama), or a public custom team. Click a button.
+Then, in EA's Team Builder, that roster shows up in the presets list — pick it, and the whole roster
+is replaced with those real players: names, ratings, positions, class years, height/weight, and
+skin tones.
 
 Nothing is uploaded to EA until *you* press EA's own **Save**.
 
@@ -51,9 +52,11 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 
 ## Use it
 
-1. Go to a classic team page on TeamCrafters, find them at.
-   `teamcrafters.net/app/classic-rosters`
-2. Click the blue **"Copy For Team Builder"** button (bottom-right).
+1. Go to a TeamCrafters classic-team page (`teamcrafters.net/app/classic-rosters`), public custom
+   team page (such as `teamcrafters.net/app/customTeams/691`), or CFB 27 Team Builder directory
+   page (such as `teamcrafters.net/app/teambuilder/CFB27/[id]`).
+2. Click the blue **"Copy For Team Builder"** or **"Copy team for Team Builder"** button
+   (bottom-right).
 3. Open your team in EA College Football 27 Team Builder. Go to the "Roster" tab.
 4. On the **roster presets** dropdown, in the middle, you'll now see something like
    **"TeamCrafters: Alabama (NCAA 13)"**. Pick it.
@@ -62,16 +65,15 @@ If a TeamCrafters classic-roster page or EA Team Builder was already open, reloa
 Click the extension's toolbar icon any time to see what's currently copied, preview it on
 TeamCrafters, or clear it. While a local team is saved, so the names persist, the auto name-generation function is disabled, you'll need to unload your team to re-enable it.
 
-## Or copy an EA Team Builder preview
+For custom teams with an original Team Builder asset (including legacy entries that retained only
+their submission URL), the copy reads that team’s published `nonce-primary` file through the
+TeamCrafters extension API and preserves its player data, portraits, and equipment. Entries with no
+asset reference fall back to the public roster table and use the extension's stable base appearance
+map so they remain safe to load in Team Builder.
 
-1. Open a shared team at `https://www.ea.com/games/ea-sports-college-football/team-builder/preview/[teamid]`.
-2. Wait for the page to load, then use the **Copy roster for Team Builder** control at the bottom-right.
-3. Open the roster presets on any Team Builder team and select the new **TeamCrafters** preset.
-
-The preview copy reads the page's `nonce-primary` response and preserves the original player map
-and `characterVisuals` map together, including each player's exact portrait and equipment. It only
-writes the clipboard after you press Copy. Use **Download CSV** beside it to save the same roster
-in the extension's import format; the CSV includes `portraitId` for every player.
+CFB 27 Team Builder directory pages use the same verified payload path, so they preserve the
+original roster, portraits, and equipment. Copy actions are intentionally available only from
+TeamCrafters pages—not from EA Team Builder preview pages.
 
 ## Or build a roster from a spreadsheet
 
@@ -83,7 +85,7 @@ You don't have to start from a TeamCrafters team — you can bring your own rost
 4. Back on that page, give the roster a name, pick your file, and hit **Import roster**.
 5. It shows up in Team Builder's presets exactly like a copied TeamCrafters roster.
 
-Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone) can be left blank too; those fall back to the base template's values. An optional `portraitId` preserves a Team Builder player's exact EA head; it takes precedence over `skinTone`, while a blank `portraitId` uses the existing skin-tone-to-portrait fallback.
+Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone, `homeTown`, and `homeTownState`) can be left blank too; those fall back to the base template's values. `homeTownState` is an optional integer: 0–49 map to Alabama–Wyoming alphabetically, and 50 is Non-US. An optional `portraitId` preserves a Team Builder player's exact EA head; it takes precedence over `skinTone`, while a blank `portraitId` uses the existing skin-tone-to-portrait fallback.
 
 Your roster also has to be able to field a team, so the import requires **45–85 players** and a minimum at each position (2 QB, 3 HB, 5 WR, 2 TE, 1 each on the O-line, 2 LE/RE, 3 DT, 2 MLB, 2 CB, 2 FS, 1 SS, 1 K, 1 P — FB optional). Two units also have a combined minimum on top of that: **8 offensive linemen** across LT/LG/C/RG/RT and **3 outside linebackers** across LOLB/ROLB. How you distribute those is up to you, as long as no single spot is empty. Nothing is imported until everything passes, and the page tells you the exact row and column to fix.
 
@@ -173,7 +175,7 @@ closure-bound and effectively unreachable in the production build). It:
 1. **At copy time** (teamcrafters.net) fetches the roster export, merges those players onto a
    bundled real EA preset, and stores the finished `roster.json` + `character_visuals.json` in
    `chrome.storage.local`.
-2. **On the Team Builder page** intercepts three GET responses:
+2. **On the Team Builder page** intercepts the relevant GET responses:
    - `template_rosters.json` — the presets list. Replaces the **Cupcake** entry with ours,
      **keeping Cupcake's real id (1238)**. This matters: EA copies the chosen preset's id into the
      loaded roster's `templateId`, and a made-up id crashes the game. Our merged roster is built on
@@ -183,18 +185,21 @@ closure-bound and effectively unreachable in the production build). It:
    - `plyr-gen-names.json` — the name-generator pool. While a roster is copied we serve an empty
      pool, because EA otherwise regenerates every player's name from their skin tone on load,
      overwriting the real names.
+   - `my_school_templates.json` — appends locally-created school templates, leaving every EA
+     template untouched. Fixed grades have identical `min`/`max` values; only Pro Potential can
+     have a range.
 3. **EA's own loader** does the actual roster replacement.
 
 ## Project layout
 
 | File | World | Runs on | Purpose |
 |---|---|---|---|
-| `teamcrafters-copy.js` | isolated | classic-roster pages | The two buttons; calls the export API, stores the merged result or writes the CSV |
-| `roster-merge.js` | isolated | classic-roster pages | All merge logic (loaded first; shares scope) |
-| `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for the three interceptions |
+| `teamcrafters-copy.js` | isolated | classic-roster and custom-team pages | Copy controls; reads the classic API or custom-team page roster, then stores the merged result or writes the CSV |
+| `roster-merge.js` | isolated | TeamCrafters roster pages | All merge logic (loaded first; shares scope) |
+| `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for roster and school-template responses |
 | `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
-| `options.html` / `options.js` | — | — | Tabbed uniform picker, CSV importer, and Team Builder Unleashed launcher/status |
+| `options.html` / `options.js` | — | — | Tabbed uniform, mascot, stadium, school-template, and CSV tools plus editor launcher |
 | `equipment-web-bridge.js` | isolated | exact Team Builder Unleashed route | Versioned, revision-safe web editor bridge for the stored roster visuals |
 | `csv-import.js` | isolated | classic-roster pages | CSV parsing + mapping into the normalized roster shape; owns the column schema and roster rules |
 | `csv-export.js` | isolated | classic-roster pages | The reverse — normalized roster to CSV, reusing `csv-import.js`'s tables so the two can't drift |
@@ -286,6 +291,8 @@ e.g. `/api/extension/v1/classic-rosters/ncaa-13/alabama`. It returns normalized 
       "devTrait": null,        // 0-3 (Normal/Impact/Star/Elite), null if unknown
       "archetypeId": 4,        // PLYR_PLAYERTYPE, null if unknown
       "portraitId": "3163",    // PLYR_PORTRAIT, drives face/skin tone
+      "homeTown": "Ann Arbor", // PLYR_HOME_TOWN, null leaves the template value
+      "homeTownState": 21,      // PLYR_HOME_STATE; 0=Alabama ... 50=Non-US
       "skinToneCode": 8,
       "ratings": { "OVR": 93, "SPD": 96, "AWR": 84 }
     }
@@ -301,7 +308,8 @@ Notes for anyone working against this:
 - **Any rating key may be absent.** Classic-era games didn't have every modern rating, and values
   that would need an unverified conversion formula are omitted rather than guessed. The merge
   leaves the template's value for anything missing.
-- Nullable fields (`heightInches`, `isLefty`, `devTrait`, `archetypeId`, `portraitId`) mean "not
+- Nullable fields (`heightInches`, `isLefty`, `devTrait`, `archetypeId`, `portraitId`, `homeTown`,
+  `homeTownState`) mean "not
   known for this player" — the merge skips them rather than writing a default.
 
 ## Developing

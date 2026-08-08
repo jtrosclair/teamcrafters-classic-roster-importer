@@ -1,0 +1,730 @@
+[
+  {
+    "id": 33,
+    "displayName": "Idaho"
+  },
+  {
+    "id": 300,
+    "displayName": "College Football Blitz"
+  },
+  {
+    "id": 500,
+    "displayName": "Air Force"
+  },
+  {
+    "id": 501,
+    "displayName": "Akron"
+  },
+  {
+    "id": 502,
+    "displayName": "Alabama"
+  },
+  {
+    "id": 503,
+    "displayName": "Appalachian State"
+  },
+  {
+    "id": 504,
+    "displayName": "Arizona"
+  },
+  {
+    "id": 505,
+    "displayName": "Arizona State"
+  },
+  {
+    "id": 506,
+    "displayName": "Arkansas"
+  },
+  {
+    "id": 507,
+    "displayName": "Arkansas State"
+  },
+  {
+    "id": 508,
+    "displayName": "Army"
+  },
+  {
+    "id": 509,
+    "displayName": "Auburn"
+  },
+  {
+    "id": 510,
+    "displayName": "Ball State"
+  },
+  {
+    "id": 511,
+    "displayName": "Baylor"
+  },
+  {
+    "id": 512,
+    "displayName": "Boise State"
+  },
+  {
+    "id": 513,
+    "displayName": "Boston College"
+  },
+  {
+    "id": 514,
+    "displayName": "Bowling Green"
+  },
+  {
+    "id": 515,
+    "displayName": "Buffalo"
+  },
+  {
+    "id": 516,
+    "displayName": "BYU"
+  },
+  {
+    "id": 517,
+    "displayName": "Cal"
+  },
+  {
+    "id": 518,
+    "displayName": "Central Michigan"
+  },
+  {
+    "id": 519,
+    "displayName": "Charlotte"
+  },
+  {
+    "id": 520,
+    "displayName": "Cincinnati"
+  },
+  {
+    "id": 521,
+    "displayName": "Clemson"
+  },
+  {
+    "id": 522,
+    "displayName": "Coastal Carolina"
+  },
+  {
+    "id": 523,
+    "displayName": "Colorado"
+  },
+  {
+    "id": 524,
+    "displayName": "Colorado State"
+  },
+  {
+    "id": 525,
+    "displayName": "Connecticut"
+  },
+  {
+    "id": 526,
+    "displayName": "Duke"
+  },
+  {
+    "id": 527,
+    "displayName": "Eastern Michigan"
+  },
+  {
+    "id": 528,
+    "displayName": "ECU"
+  },
+  {
+    "id": 529,
+    "displayName": "FIU"
+  },
+  {
+    "id": 530,
+    "displayName": "Florida"
+  },
+  {
+    "id": 531,
+    "displayName": "Florida Atlantic"
+  },
+  {
+    "id": 532,
+    "displayName": "Florida State"
+  },
+  {
+    "id": 533,
+    "displayName": "Fresno State"
+  },
+  {
+    "id": 534,
+    "displayName": "Georgia"
+  },
+  {
+    "id": 535,
+    "displayName": "Georgia Southern"
+  },
+  {
+    "id": 536,
+    "displayName": "Georgia State"
+  },
+  {
+    "id": 537,
+    "displayName": "Georgia Tech"
+  },
+  {
+    "id": 538,
+    "displayName": "Hawai'i"
+  },
+  {
+    "id": 538,
+    "displayName": "Hawaii"
+  },
+  {
+    "id": 539,
+    "displayName": "Houston"
+  },
+  {
+    "id": 540,
+    "displayName": "Illinois"
+  },
+  {
+    "id": 541,
+    "displayName": "Indiana"
+  },
+  {
+    "id": 542,
+    "displayName": "Iowa"
+  },
+  {
+    "id": 543,
+    "displayName": "Iowa State"
+  },
+  {
+    "id": 544,
+    "displayName": "Jacksonville State"
+  },
+  {
+    "id": 545,
+    "displayName": "James Madison"
+  },
+  {
+    "id": 546,
+    "displayName": "Kansas"
+  },
+  {
+    "id": 547,
+    "displayName": "Kansas State"
+  },
+  {
+    "id": 548,
+    "displayName": "Kent State"
+  },
+  {
+    "id": 549,
+    "displayName": "Kentucky"
+  },
+  {
+    "id": 550,
+    "displayName": "Liberty"
+  },
+  {
+    "id": 551,
+    "displayName": "Louisiana"
+  },
+  {
+    "id": 552,
+    "displayName": "Louisiana Tech"
+  },
+  {
+    "id": 553,
+    "displayName": "Louisville"
+  },
+  {
+    "id": 554,
+    "displayName": "LSU"
+  },
+  {
+    "id": 555,
+    "displayName": "Marshall"
+  },
+  {
+    "id": 556,
+    "displayName": "Maryland"
+  },
+  {
+    "id": 557,
+    "displayName": "Memphis"
+  },
+  {
+    "id": 558,
+    "displayName": "Miami"
+  },
+  {
+    "id": 559,
+    "displayName": "Miami (OH)"
+  },
+  {
+    "id": 560,
+    "displayName": "Michigan"
+  },
+  {
+    "id": 561,
+    "displayName": "Michigan State"
+  },
+  {
+    "id": 562,
+    "displayName": "Mid Tenn State"
+  },
+  {
+    "id": 563,
+    "displayName": "Minnesota"
+  },
+  {
+    "id": 564,
+    "displayName": "Mississippi State"
+  },
+  {
+    "id": 565,
+    "displayName": "Missouri"
+  },
+  {
+    "id": 566,
+    "displayName": "Navy"
+  },
+  {
+    "id": 567,
+    "displayName": "NC State"
+  },
+  {
+    "id": 568,
+    "displayName": "Nebraska"
+  },
+  {
+    "id": 569,
+    "displayName": "Nevada"
+  },
+  {
+    "id": 570,
+    "displayName": "New Mexico"
+  },
+  {
+    "id": 571,
+    "displayName": "New Mexico State"
+  },
+  {
+    "id": 572,
+    "displayName": "North Carolina"
+  },
+  {
+    "id": 573,
+    "displayName": "North Texas"
+  },
+  {
+    "id": 574,
+    "displayName": "Northern Illinois"
+  },
+  {
+    "id": 575,
+    "displayName": "Northwestern"
+  },
+  {
+    "id": 576,
+    "displayName": "Notre Dame"
+  },
+  {
+    "id": 577,
+    "displayName": "Ohio"
+  },
+  {
+    "id": 578,
+    "displayName": "Ohio State"
+  },
+  {
+    "id": 579,
+    "displayName": "Oklahoma"
+  },
+  {
+    "id": 580,
+    "displayName": "Oklahoma State"
+  },
+  {
+    "id": 581,
+    "displayName": "Old Dominion"
+  },
+  {
+    "id": 582,
+    "displayName": "Ole Miss"
+  },
+  {
+    "id": 583,
+    "displayName": "Oregon"
+  },
+  {
+    "id": 584,
+    "displayName": "Oregon State"
+  },
+  {
+    "id": 585,
+    "displayName": "Penn State"
+  },
+  {
+    "id": 586,
+    "displayName": "Pittsburgh"
+  },
+  {
+    "id": 587,
+    "displayName": "Purdue"
+  },
+  {
+    "id": 588,
+    "displayName": "Rice"
+  },
+  {
+    "id": 589,
+    "displayName": "Rutgers"
+  },
+  {
+    "id": 590,
+    "displayName": "Sam Houston State"
+  },
+  {
+    "id": 591,
+    "displayName": "San Diego State"
+  },
+  {
+    "id": 592,
+    "displayName": "San Jose State"
+  },
+  {
+    "id": 593,
+    "displayName": "SMU"
+  },
+  {
+    "id": 594,
+    "displayName": "South Alabama"
+  },
+  {
+    "id": 595,
+    "displayName": "South Carolina"
+  },
+  {
+    "id": 596,
+    "displayName": "Southern Miss"
+  },
+  {
+    "id": 597,
+    "displayName": "Stanford"
+  },
+  {
+    "id": 598,
+    "displayName": "Syracuse"
+  },
+  {
+    "id": 599,
+    "displayName": "TCU"
+  },
+  {
+    "id": 600,
+    "displayName": "Temple"
+  },
+  {
+    "id": 601,
+    "displayName": "Tennessee"
+  },
+  {
+    "id": 602,
+    "displayName": "Texas"
+  },
+  {
+    "id": 603,
+    "displayName": "Texas A&M"
+  },
+  {
+    "id": 604,
+    "displayName": "Texas State"
+  },
+  {
+    "id": 605,
+    "displayName": "Texas Tech"
+  },
+  {
+    "id": 606,
+    "displayName": "Toledo"
+  },
+  {
+    "id": 607,
+    "displayName": "Troy"
+  },
+  {
+    "id": 608,
+    "displayName": "Tulane"
+  },
+  {
+    "id": 609,
+    "displayName": "Tulsa"
+  },
+  {
+    "id": 610,
+    "displayName": "UAB"
+  },
+  {
+    "id": 611,
+    "displayName": "UCF"
+  },
+  {
+    "id": 612,
+    "displayName": "UCLA"
+  },
+  {
+    "id": 613,
+    "displayName": "UL Monroe"
+  },
+  {
+    "id": 614,
+    "displayName": "UMass"
+  },
+  {
+    "id": 615,
+    "displayName": "UNLV"
+  },
+  {
+    "id": 616,
+    "displayName": "USC"
+  },
+  {
+    "id": 617,
+    "displayName": "USF"
+  },
+  {
+    "id": 618,
+    "displayName": "Utah"
+  },
+  {
+    "id": 619,
+    "displayName": "Utah State"
+  },
+  {
+    "id": 620,
+    "displayName": "UTEP"
+  },
+  {
+    "id": 621,
+    "displayName": "UTSA"
+  },
+  {
+    "id": 622,
+    "displayName": "Vanderbilt"
+  },
+  {
+    "id": 623,
+    "displayName": "Virginia"
+  },
+  {
+    "id": 624,
+    "displayName": "Virginia Tech"
+  },
+  {
+    "id": 625,
+    "displayName": "Wake Forest"
+  },
+  {
+    "id": 626,
+    "displayName": "Washington"
+  },
+  {
+    "id": 627,
+    "displayName": "Washington State"
+  },
+  {
+    "id": 628,
+    "displayName": "West Virginia"
+  },
+  {
+    "id": 629,
+    "displayName": "Western Kentucky"
+  },
+  {
+    "id": 630,
+    "displayName": "Western Michigan"
+  },
+  {
+    "id": 631,
+    "displayName": "Wisconsin"
+  },
+  {
+    "id": 632,
+    "displayName": "Wyoming"
+  },
+  {
+    "id": 633,
+    "displayName": "Kennesaw State"
+  },
+  {
+    "id": 635,
+    "displayName": "Hard Rock Stadium"
+  },
+  {
+    "id": 637,
+    "displayName": "NRG Stadium™"
+  },
+  {
+    "id": 638,
+    "displayName": "Rose Bowl"
+  },
+  {
+    "id": 639,
+    "displayName": "AT&T Stadium"
+  },
+  {
+    "id": 641,
+    "displayName": "Raymond James Stadium"
+  },
+  {
+    "id": 643,
+    "displayName": "Caesars Superdome"
+  },
+  {
+    "id": 644,
+    "displayName": "Bank of America Stadium®"
+  },
+  {
+    "id": 645,
+    "displayName": "Ford Field"
+  },
+  {
+    "id": 646,
+    "displayName": "Lucas Oil Stadium"
+  },
+  {
+    "id": 647,
+    "displayName": "State Farm Stadium"
+  },
+  {
+    "id": 648,
+    "displayName": "Frisco Bowl Stadium"
+  },
+  {
+    "id": 649,
+    "displayName": "Fenway Bowl Stadium"
+  },
+  {
+    "id": 650,
+    "displayName": "Independence Bowl Stadium"
+  },
+  {
+    "id": 651,
+    "displayName": "SoFi Stadium"
+  },
+  {
+    "id": 652,
+    "displayName": "Exploria Stadium"
+  },
+  {
+    "id": 653,
+    "displayName": "Camping World Stadium"
+  },
+  {
+    "id": 654,
+    "displayName": "Salute to Veterans Bowl Stadium"
+  },
+  {
+    "id": 655,
+    "displayName": "Xbox Bowl"
+  },
+  {
+    "id": 656,
+    "displayName": "Rate Bowl Stadium"
+  },
+  {
+    "id": 658,
+    "displayName": "Holiday Bowl Stadium"
+  },
+  {
+    "id": 660,
+    "displayName": "City Stadium"
+  },
+  {
+    "id": 661,
+    "displayName": "College practice field"
+  },
+  {
+    "id": 662,
+    "displayName": "Delaware"
+  },
+  {
+    "id": 663,
+    "displayName": "Missouri State"
+  },
+  {
+    "id": 664,
+    "displayName": "North Dakota State"
+  },
+  {
+    "id": 665,
+    "displayName": "Sacramento St."
+  },
+  {
+    "id": 700,
+    "displayName": "Cotton Bowl"
+  },
+  {
+    "id": 701,
+    "displayName": "Army - Navy"
+  },
+  {
+    "id": 702,
+    "displayName": "Mercedes-Benz Stadium"
+  },
+  {
+    "id": 703,
+    "displayName": "EverBank Stadium"
+  },
+  {
+    "id": 704,
+    "displayName": "Metlife Stadium"
+  },
+  {
+    "id": 705,
+    "displayName": "Nissan Stadium"
+  },
+  {
+    "id": 706,
+    "displayName": "Dublin"
+  },
+  {
+    "id": 707,
+    "displayName": "M&T Bank Stadium"
+  },
+  {
+    "id": 708,
+    "displayName": "High School Stadium"
+  },
+  {
+    "id": 709,
+    "displayName": "Gillette Stadium"
+  },
+  {
+    "id": 714,
+    "displayName": "Generic Stadium 4"
+  },
+  {
+    "id": 715,
+    "displayName": "Mountain Dew Stadium"
+  },
+  {
+    "id": 716,
+    "displayName": "High School Stadium 01"
+  },
+  {
+    "id": 717,
+    "displayName": "High School Stadium 02"
+  },
+  {
+    "id": 718,
+    "displayName": "High School Stadium 03"
+  },
+  {
+    "id": 719,
+    "displayName": "Horseshoe stadium"
+  },
+  {
+    "id": 720,
+    "displayName": "Side stadium"
+  },
+  {
+    "id": 721,
+    "displayName": "Oval Stadium"
+  },
+  {
+    "id": 722,
+    "displayName": "Lambeau Field™"
+  }
+]
