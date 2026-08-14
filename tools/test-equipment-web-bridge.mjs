@@ -273,6 +273,34 @@ async function run() {
   assert.equal(protectedError.payload.code, 'INVALID_PAYLOAD');
   assert.match(protectedError.payload.message, /protected character visual fields/i);
 
+  const removedEditableEquipment = JSON.parse(current.payload.clipboard.visualsJson);
+  removedEditableEquipment['100'].loadouts[0].loadoutElements = [];
+  harness.dispatch(harness.envelope('TC_UNLEASHED_PUT_CLIPBOARD', {
+    expectedRevision: current.payload.revision,
+    patch: {
+      visualsJson: JSON.stringify(removedEditableEquipment),
+      equipmentEditedAt: '2026-08-03T13:04:00.000Z',
+    },
+  }, 'put-remove-editable'));
+  const removedEditableWrite = await harness.waitFor('TC_UNLEASHED_WRITE_RESULT', 'put-remove-editable');
+  assert.deepEqual(
+    JSON.parse(removedEditableWrite.payload.clipboard.visualsJson)['100'].loadouts[0].loadoutElements,
+    [],
+  );
+
+  const removedHiddenEquipment = JSON.parse(removedEditableWrite.payload.clipboard.visualsJson);
+  removedHiddenEquipment['101'].loadouts[1].loadoutElements = [];
+  harness.dispatch(harness.envelope('TC_UNLEASHED_PUT_CLIPBOARD', {
+    expectedRevision: removedEditableWrite.payload.revision,
+    patch: {
+      visualsJson: JSON.stringify(removedHiddenEquipment),
+      equipmentEditedAt: '2026-08-03T13:05:00.000Z',
+    },
+  }, 'put-remove-hidden'));
+  const hiddenRemoval = await harness.waitFor('TC_UNLEASHED_ERROR', 'put-remove-hidden');
+  assert.equal(hiddenRemoval.payload.code, 'INVALID_PAYLOAD');
+  assert.match(hiddenRemoval.payload.message, /hidden or incompatible equipment slot/i);
+
   const beforeWrongOrigin = harness.posted.length;
   harness.dispatch(harness.envelope('TC_UNLEASHED_GET_CLIPBOARD', {}, 'wrong-origin'), {
     origin: 'https://evil.example',

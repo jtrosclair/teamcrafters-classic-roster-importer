@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.6.1 — 2026-08-13
+
+### Fixes
+
+- Allow Team Builder Unleashed to remove equipment from slots exposed by the editor, restoring
+  stock "no equipment" and disabled cleat-render-override states without changing protected
+  player visuals or hidden equipment slots.
+
+### Upgrade
+
+Reload the extension in `chrome://extensions`, then reload any open TeamCrafters and Team Builder
+tabs. Your copied roster, uniform selection, and existing extension settings are retained.
+
 ## v0.6.0 — 2026-08-08
 
 > **Note from Jerry:** There are many untested/unverified changes in this release, mostly due to

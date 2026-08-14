@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TeamCrafters Classic Roster Importer",
   "short_name": "Classic Roster Importer",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "author": "TeamCrafters",
   "description": "By TeamCrafters. Copy classic, custom, or Team Builder directory rosters from TeamCrafters, or an EA Team Builder preview, then load them as an \"Import from TeamCrafters\" preset.",
   "icons": {

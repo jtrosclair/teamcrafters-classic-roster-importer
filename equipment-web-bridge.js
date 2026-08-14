@@ -224,32 +224,40 @@
     const category = Number(current.loadoutCategory);
     const currentElements = Array.isArray(current.loadoutElements) ? current.loadoutElements : [];
     const nextElements = Array.isArray(next.loadoutElements) ? next.loadoutElements : [];
-    if (nextElements.length < currentElements.length) {
-      throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} removed existing equipment elements.`);
-    }
-
     const seenSlots = new Set();
-    for (let index = 0; index < currentElements.length; index++) {
-      const before = currentElements[index];
-      const after = nextElements[index];
-      if (!isRecord(before) || !isRecord(after) ||
-          !deepEqual(withoutKey(before, 'itemAssetName'), withoutKey(after, 'itemAssetName'))) {
-        throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} changed protected equipment element fields.`);
+    const currentSlots = new Set();
+    let nextIndex = 0;
+    for (const before of currentElements) {
+      if (!isRecord(before)) {
+        throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} has an invalid existing equipment element.`);
       }
       const slotId = Number(before.slotType);
+      currentSlots.add(slotId);
+      const after = nextElements[nextIndex];
+
+      // Stock Team Builder represents absent equipment and disabled render overrides by
+      // omitting their elements. Permit that only for slots this editor exposes.
+      if (!isRecord(after) || Number(after.slotType) !== slotId) {
+        assertEditableSlot(slotId, category, `Player ${playerId}`);
+        continue;
+      }
+      if (!deepEqual(withoutKey(before, 'itemAssetName'), withoutKey(after, 'itemAssetName'))) {
+        throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} changed protected equipment element fields.`);
+      }
       seenSlots.add(slotId);
       if (before.itemAssetName !== after.itemAssetName) {
         assertEditableSlot(slotId, category, `Player ${playerId}`);
         assertValidAssetName(after.itemAssetName, `Player ${playerId} slot ${slotId}`);
       }
+      nextIndex += 1;
     }
 
-    for (const element of nextElements.slice(currentElements.length)) {
+    for (const element of nextElements.slice(nextIndex)) {
       if (!isRecord(element) || !hasOnlyKeys(element, ['itemAssetName', 'slotType'])) {
         throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} added an equipment element with unsupported fields.`);
       }
       const slotId = Number(element.slotType);
-      if (seenSlots.has(slotId)) {
+      if (seenSlots.has(slotId) || currentSlots.has(slotId)) {
         throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} added a duplicate equipment slot.`);
       }
       assertEditableSlot(slotId, category, `Player ${playerId}`);
