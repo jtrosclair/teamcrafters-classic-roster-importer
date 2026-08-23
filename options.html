@@ -1,377 +1,157 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Roster, stadium, mascot, equipment &amp; uniforms — TeamCrafters</title>
-<style>
-  :root { color-scheme: light; }
-  body {
-    margin: 0; padding: 0 0 48px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #1b1f24; background: #f6f7f9;
-  }
-  header {
-    display: flex; align-items: center; gap: 12px;
-    padding: 18px 24px; background: linear-gradient(135deg, #2b7cf0, #0f4fb0); color: #fff;
-  }
-  header img { width: 32px; height: 32px; border-radius: 7px; }
-  header h1 { font-size: 17px; margin: 0; }
-  .tabs {
-    display: flex; gap: 4px; max-width: 720px; margin: 20px auto 0; padding: 0 20px;
-    border-bottom: 1px solid #e2e5ea;
-  }
-  .tab {
-    background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0;
-    padding: 10px 14px; margin-bottom: -1px; font-size: 13px; font-weight: 600; color: #5f6b7a;
-    cursor: pointer; white-space: nowrap;
-  }
-  .tab:hover { background: none; color: #1b1f24; }
-  .tab.active { color: #1a73e8; border-bottom-color: #1a73e8; }
-  .tab:focus-visible { outline: 2px solid #1a73e8; outline-offset: -3px; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  main { max-width: 720px; margin: 16px auto 0; padding: 0 20px; }
-  .card {
-    background: #fff; border: 1px solid #e2e5ea; border-radius: 10px;
-    padding: 18px 20px; margin-bottom: 16px;
-  }
-  h2 { font-size: 15px; margin: 0 0 6px; }
-  p, li { font-size: 13.5px; line-height: 1.6; color: #384049; }
-  p.sub { color: #5f6b7a; margin-top: 0; }
-  code { background: #f0f2f5; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
-  button, .btn {
-    display: inline-block; padding: 9px 14px; border-radius: 6px; border: none;
-    background: #1a73e8; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
-  }
-  button:hover { background: #1668d4; }
-  button:disabled { background: #c7c7c7; cursor: not-allowed; }
-  button.secondary { background: #fff; color: #333; border: 1px solid #d7dbe0; }
-  button.secondary:hover { background: #f2f4f6; }
-  input[type="text"], input[type="number"], select {
-    width: 100%; box-sizing: border-box; padding: 9px 10px; font-size: 13px;
-    border: 1px solid #d7dbe0; border-radius: 6px; margin-bottom: 12px;
-    background: #fff; color: #1b1f24;
-  }
-  input[type="file"] { font-size: 13px; margin-bottom: 12px; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .result { margin-top: 14px; font-size: 13px; line-height: 1.6; border-radius: 8px; padding: 12px 14px; }
-  .result.ok { background: #e9f7ee; border: 1px solid #b7e0c4; color: #1c5b31; }
-  .result.err { background: #fdecec; border: 1px solid #f3c2c2; color: #8c1d1d; }
-  .result.warn { background: #fff8e6; border: 1px solid #f0dfae; color: #6b5310; margin-top: 10px; }
-  .result ul { margin: 6px 0 0; padding-left: 18px; }
-  details { margin-top: 10px; }
-  summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #1a73e8; }
-  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12.5px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eceef1; vertical-align: top; }
-  th { color: #5f6b7a; font-weight: 600; }
-  .muted { color: #5f6b7a; font-size: 12.5px; }
-  .team-list {
-    max-height: 220px; overflow-y: auto; border: 1px solid #e2e5ea; border-radius: 6px;
-    margin-bottom: 12px;
-  }
-  .team-row {
-    display: flex; align-items: baseline; gap: 10px; padding: 7px 10px; cursor: pointer;
-    font-size: 13px; border-bottom: 1px solid #f1f3f5;
-  }
-  .team-row:last-child { border-bottom: none; }
-  .team-row:hover { background: #f5f7fa; }
-  .team-row.selected { background: #e8f0fe; }
-  .team-row .nm { flex: 1; font-weight: 600; }
-  .team-row .ab { color: #5f6b7a; font-size: 11.5px; font-variant: tabular-nums; }
-  .team-row .ct { color: #5f6b7a; font-size: 11.5px; }
-  .team-list .none { padding: 12px 10px; color: #5f6b7a; font-size: 13px; }
-  .uni-row {
-    display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12.5px;
-  }
-  .uni-row .un { flex: 1; }
-  .chip {
-    font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px;
-    letter-spacing: .3px;
-  }
-  .chip.dark { background: #2b3440; color: #fff; }
-  .chip.light { background: #eef1f5; color: #333; border: 1px solid #d7dbe0; }
-  .chip.official { background: #e9f7ee; color: #1c5b31; border: 1px solid #b7e0c4; }
-  .template-intro { border-left: 4px solid #efb600; }
-  .template-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 12px; }
-  .template-form-grid label, .grade-grid label { display: block; color: #384049; font-size: 12px; font-weight: 700; }
-  .template-form-grid input, .template-form-grid select, .grade-grid select { margin-top: 5px; margin-bottom: 0; }
-  .grade-section-title { margin: 22px 0 8px; font-size: 12px; font-weight: 800; color: #2c4058; letter-spacing: .06em; text-transform: uppercase; }
-  .grade-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .pro-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
-  .pro-range span { display: block; color: #5f6b7a; font-size: 11px; font-weight: 600; margin-top: 8px; }
-  .template-list { margin-top: 12px; }
-  .template-list td:last-child { width: 1%; white-space: nowrap; }
-  .template-list button { padding: 5px 8px; font-size: 11.5px; background: #fff; color: #9c2c2c; border: 1px solid #e5bcbc; }
-  .template-list button:hover { background: #fff3f3; }
-  @media (max-width: 560px) {
-    .template-form-grid, .grade-grid { grid-template-columns: 1fr; }
-  }
-
-  /* The full equipment editor lives on TeamCrafters; this extension page is its launch/status surface. */
-  .equipment-launch {
-    position: relative; overflow: hidden; padding: 26px; border-color: #c9d7ea;
-    background: linear-gradient(145deg, #fff 0%, #f4f8ff 70%, #eef5ff 100%);
-  }
-  .equipment-launch::after {
-    content: ''; position: absolute; top: -58px; right: -44px; width: 170px; height: 170px;
-    border: 22px solid rgba(26,115,232,.07); border-radius: 50%; pointer-events: none;
-  }
-  .equipment-launch-kicker {
-    margin: 0 0 8px; color: #1a73e8; font-size: 10.5px; font-weight: 800;
-    letter-spacing: .14em; text-transform: uppercase;
-  }
-  .equipment-launch h2 { position: relative; z-index: 1; font-size: 22px; letter-spacing: -.02em; }
-  .equipment-launch .sub { position: relative; z-index: 1; max-width: 560px; }
-  .equipment-launch-actions { position: relative; z-index: 1; display: flex; gap: 9px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
-  .equipment-launch-status {
-    position: relative; z-index: 1; margin-top: 18px; padding-top: 14px; border-top: 1px solid #dce6f2;
-    color: #5f6b7a; font-size: 12.5px; line-height: 1.55;
-  }
-  .equipment-launch-status strong { display: block; color: #23364e; font-size: 13px; }
-  a.btn { text-decoration: none; }
-</style>
+  <meta charset="utf-8">
+  <title>Team Builder Unleashed — TeamCrafters</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 720px;
+      min-height: 100vh;
+      margin: 0;
+      background: #0f1219;
+      color: #f7f9fc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    header { border-bottom: 1px solid #334155; background: #111827; }
+    .header-inner, main { width: min(100% - 48px, 960px); margin: 0 auto; }
+    .header-inner { display: flex; align-items: center; gap: 12px; padding: 18px 0; }
+    header img { width: 36px; height: 36px; border-radius: 8px; }
+    .brand-kicker { margin: 0 0 3px; color: #60a5fa; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.2; }
+    main { padding: 32px 0 48px; }
+    .hero { display: flex; gap: 24px; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+    .hero-copy { max-width: 640px; }
+    h2 { margin: 0 0 8px; color: #f7f9fc; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+    .hero p, .card p, .status-detail { color: #aab5c4; font-size: 14px; line-height: 1.6; }
+    .hero p { margin: 0; }
+    .button, button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 14px;
+      border: 1px solid #334155;
+      border-radius: 7px;
+      background: #1a1f2e;
+      color: #f7f9fc;
+      font: 700 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button.primary { border-color: #2b7cf0; background: #2b7cf0; color: #fff; }
+    .button:hover, button:hover { border-color: #60a5fa; background: #242c3e; }
+    .button.primary:hover { background: #1f6de0; }
+    .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 28px 0 10px; }
+    .section-heading h3 { margin: 0; color: #f7f9fc; font-size: 15px; font-weight: 700; }
+    .section-heading span { color: #7f8da1; font-size: 12px; }
+    .shortcut-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .card { display: flex; flex-direction: column; min-height: 198px; padding: 18px; border: 1px solid #334155; border-radius: 10px; background: #1a1f2e; }
+    .card h4 { margin: 0; color: #f7f9fc; font-size: 15px; font-weight: 700; }
+    .card p { margin: 7px 0 16px; }
+    .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+    .card-actions a { color: #93c5fd; font-size: 12px; font-weight: 700; text-decoration: none; }
+    .card-actions a:hover { color: #dbeafe; text-decoration: underline; }
+    .status-card { padding: 0; overflow: hidden; border: 1px solid #334155; border-radius: 10px; background: #1a1f2e; }
+    .status-list { margin: 0; padding: 0; list-style: none; }
+    .status-row { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #263142; }
+    .status-row:last-child { border-bottom: 0; }
+    .status-dot { width: 7px; height: 7px; border-radius: 999px; background: #64748b; }
+    .status-dot.ready { background: #34d399; }
+    .status-title { display: block; color: #f7f9fc; font-size: 13px; font-weight: 700; }
+    .status-detail { display: block; margin-top: 2px; font-size: 12px; line-height: 1.4; }
+    .status-action { color: #93c5fd; font-size: 12px; font-weight: 700; text-decoration: none; }
+    .status-action:hover { color: #dbeafe; text-decoration: underline; }
+    details { margin-top: 14px; padding: 13px 16px; border: 1px solid #334155; border-radius: 9px; background: #111827; }
+    summary { color: #aab5c4; font-size: 13px; cursor: pointer; }
+    .maintenance-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+    .maintenance-actions button { min-height: 34px; color: #fecaca; font-size: 12px; }
+    .maintenance-actions button[hidden] { display: none; }
+    .footer { margin-top: 25px; color: #7f8da1; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #93c5fd; font-weight: 700; text-decoration: none; }
+    @media (max-width: 760px) {
+      body { min-width: 0; }
+      .header-inner, main { width: min(100% - 32px, 960px); }
+      .hero { display: block; }
+      .hero .button { margin-top: 16px; }
+      .shortcut-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <header>
-    <img src="icons/icon48.png" alt="">
-    <h1>Roster workshop</h1>
+    <div class="header-inner">
+      <img src="icons/icon48.png" alt="">
+      <div>
+        <p class="brand-kicker">TeamCrafters</p>
+        <h1>Team Builder Unleashed</h1>
+      </div>
+    </div>
   </header>
-
-  <nav class="tabs" aria-label="Tools" role="tablist">
-    <button class="tab" id="tab-uniforms" role="tab" aria-controls="panel-uniforms" aria-selected="false" data-panel="panel-uniforms">Team uniforms</button>
-    <button class="tab" id="tab-mascot" role="tab" aria-controls="panel-mascot" aria-selected="false" data-panel="panel-mascot">Team mascot</button>
-    <button class="tab" id="tab-stadium" role="tab" aria-controls="panel-stadium" aria-selected="false" data-panel="panel-stadium">Stadium</button>
-    <button class="tab" id="tab-school-templates" role="tab" aria-controls="panel-school-templates" aria-selected="false" data-panel="panel-school-templates">School templates</button>
-    <button class="tab" id="tab-csv" role="tab" aria-controls="panel-csv" aria-selected="false" data-panel="panel-csv">Import roster (CSV)</button>
-    <button class="tab" id="tab-equipment" role="tab" aria-controls="panel-equipment" aria-selected="false" data-panel="panel-equipment">Modify equipment</button>
-  </nav>
-
   <main>
-    <section id="panel-uniforms" class="panel" role="tabpanel" aria-labelledby="tab-uniforms">
-    <div class="card" id="uniformCard">
-      <h2>Team uniforms</h2>
-      <p class="sub">
-        Add a real school's uniform set to your team. Pick a team here, then save your team in
-        Team Builder &mdash; you'll be asked to confirm before anything is uploaded.
-      </p>
+    <section class="hero" aria-labelledby="pageTitle">
+      <div class="hero-copy">
+        <h2 id="pageTitle">Your Team Builder connection</h2>
+        <p><strong>New in 0.7:</strong> Team Builder Unleashed is now web-first. Make changes in the Studio; this extension keeps them ready for the next time you save your team in EA Team Builder.</p>
+      </div>
+      <a class="button primary" href="https://www.teamcrafters.net/team-builder-unleashed/cfb27" target="_blank" rel="noopener">Open CFB 27 studio</a>
+    </section>
 
-      <div id="uniformArmed" class="result ok" style="display:none;"></div>
-
-      <div id="uniformPicker">
-        <input type="text" id="uniformSearch" placeholder="Search teams…" autocomplete="off">
-        <div id="teamList" class="team-list"></div>
-        <div id="uniformPreview"></div>
-        <div class="row" style="margin-top:12px;">
-          <button id="armUniformsBtn" disabled>Use these uniforms</button>
-          <span class="muted" id="uniformHint">No team selected</span>
+    <div class="section-heading"><h3>Choose what to work on</h3><span>Editing happens in the web studio.</span></div>
+    <section class="shortcut-grid" aria-label="Team Builder Unleashed shortcuts">
+      <article class="card">
+        <h4>Rosters &amp; players</h4>
+        <p>Import a roster, edit players, choose faces, and set player equipment.</p>
+        <div class="card-actions">
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/cfb27" target="_blank" rel="noopener">Open studio</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/roster-edit" target="_blank" rel="noopener">Player help</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/roster-import" target="_blank" rel="noopener">Import help</a>
         </div>
-      </div>
-      <button id="clearUniformsBtn" class="secondary" style="display:none;">Clear</button>
-    </div>
-    </section>
-
-    <section id="panel-mascot" class="panel" role="tabpanel" aria-labelledby="tab-mascot">
-    <div class="card" id="mascotCard">
-      <h2>Team mascot</h2>
-      <p class="sub">
-        Pick a mascot to add to your team. The selected mascot is written to your next Team Builder
-        save, and stays armed until you clear it.
-      </p>
-
-      <div id="mascotArmed" class="result ok" style="display:none;"></div>
-
-      <div id="mascotPicker">
-        <input type="text" id="mascotSearch" placeholder="Search teams or mascots…" autocomplete="off">
-        <div id="mascotList" class="team-list"></div>
-        <div id="mascotPreview"></div>
-        <div class="row" style="margin-top:12px;">
-          <button id="armMascotBtn" disabled>Use this mascot</button>
-          <span class="muted" id="mascotHint">No mascot selected</span>
+      </article>
+      <article class="card">
+        <h4>Stadiums &amp; mascots</h4>
+        <p>Find a stadium or mascot by name, select it, and leave it ready for your save.</p>
+        <div class="card-actions">
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/cfb27" target="_blank" rel="noopener">Open studio</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/stadiums" target="_blank" rel="noopener">Stadium help</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/mascots" target="_blank" rel="noopener">Mascot help</a>
         </div>
-      </div>
-      <button id="clearMascotBtn" class="secondary" style="display:none;">Clear</button>
-    </div>
-    </section>
-
-    <section id="panel-stadium" class="panel" role="tabpanel" aria-labelledby="tab-stadium">
-    <div class="card" id="stadiumCard">
-      <h2>Stadium</h2>
-      <p class="sub">
-        Pick a stadium for your team. The selected stadium is written to your next Team Builder
-        save, and stays armed until you clear it.
-      </p>
-      <div class="result warn" role="note">
-        <b>Experimental — not all stadiums are tested.</b><br>
-        Confirm the result in Team Builder before relying on a stadium in a saved team.
-      </div>
-
-      <div id="stadiumArmed" class="result ok" style="display:none;"></div>
-
-      <div id="stadiumPicker">
-        <input type="text" id="stadiumSearch" placeholder="Search stadiums…" autocomplete="off">
-        <div id="stadiumList" class="team-list"></div>
-        <div id="stadiumPreview"></div>
-        <div class="row" style="margin-top:12px;">
-          <button id="armStadiumBtn" disabled>Use this stadium</button>
-          <span class="muted" id="stadiumHint">No stadium selected</span>
+      </article>
+      <article class="card">
+        <h4>Prestige &amp; templates</h4>
+        <p>Set your school’s prestige ratings or save a setup you want to reuse later.</p>
+        <div class="card-actions">
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/cfb27" target="_blank" rel="noopener">Open studio</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/prestige-ratings" target="_blank" rel="noopener">Prestige help</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/templates" target="_blank" rel="noopener">Template help</a>
         </div>
-      </div>
-      <button id="clearStadiumBtn" class="secondary" style="display:none;">Clear</button>
-    </div>
+      </article>
+      <article class="card">
+        <h4>Uniforms</h4>
+        <p>Choose uniform overrides in the Studio. Read the guide before saving because an override replaces your whole uniform set.</p>
+        <div class="card-actions">
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/cfb27" target="_blank" rel="noopener">Open studio</a>
+          <a href="https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/uniforms" target="_blank" rel="noopener">Uniform help</a>
+        </div>
+      </article>
     </section>
 
-    <section id="panel-school-templates" class="panel" role="tabpanel" aria-labelledby="tab-school-templates">
-      <div class="card template-intro">
-        <h2>Custom school templates</h2>
-        <p class="sub">Create a school archetype for Team Builder's school-template picker. Your templates are stored only in this extension and appended to EA's built-in list when Team Builder loads it.</p>
-        <p class="muted">Every grade is fixed except Pro Potential, which can use a best-to-worst range.</p>
-      </div>
-
-      <div class="card">
-        <h2>Create a school template</h2>
-        <form id="schoolTemplateForm">
-          <div class="template-form-grid">
-            <label>Template name
-              <input type="text" id="schoolTemplateName" maxlength="60" required placeholder="e.g. Regional Power">
-            </label>
-            <label>Prestige (0–10)
-              <input type="number" id="schoolTemplatePrestige" min="0" max="10" step="1" value="5" required>
-            </label>
-          </div>
-          <p class="grade-section-title">Fixed grades</p>
-          <div class="grade-grid" id="fixedGradeFields"></div>
-          <p class="grade-section-title">Pro Potential range</p>
-          <div class="pro-range">
-            <label><span>Lowest possible grade</span><select id="proPotentialMin" required></select></label>
-            <label><span>Highest possible grade</span><select id="proPotentialMax" required></select></label>
-          </div>
-          <p class="muted">A range runs from the lower grade to the higher grade, such as <code>F</code> to <code>C+</code>. Choose the same grade twice for a fixed Pro Potential grade.</p>
-          <div class="row" style="margin-top:16px;">
-            <button type="submit">Add school template</button>
-          </div>
-        </form>
-        <div id="schoolTemplateResult" aria-live="polite"></div>
-      </div>
-
-      <div class="card">
-        <h2>Your school templates</h2>
-        <p class="sub">Delete a template here to remove it from Team Builder after the next page reload.</p>
-        <div id="schoolTemplateList" class="template-list"></div>
-      </div>
-    </section>
-
-    <section id="panel-csv" class="panel" role="tabpanel" aria-labelledby="tab-csv">
-    <div class="card">
-      <h2>1. Start from the sample</h2>
-      <p class="sub">
-        The sample is a complete, valid 85-player roster with every required column filled in. Open it in
-        Excel or Google Sheets, change the players to whatever you want, and save it as CSV.
-      </p>
-      <button id="downloadSample" class="secondary">⬇ Download sample-roster.csv</button>
-    </div>
-
-    <div class="card">
-      <h2>2. Upload your edited CSV</h2>
-      <p class="sub">
-        Every rating must be filled in with a number from 0&ndash;99. <b>Don't include OVR</b> &mdash; it's
-        always calculated from the player's ratings and position, so a supplied value is rejected.
-        Bio fields (height, weight, class, skin tone, portrait&hellip;) can be
-        left blank &mdash; those fall back to the base template's values.
-      </p>
-      <input type="text" id="teamName" placeholder="Roster name (shows in the Team Builder presets list)">
-      <input type="file" id="csvFile" accept=".csv,text/csv">
-      <div class="row">
-        <button id="importBtn" disabled>Import roster</button>
-        <span class="muted" id="fileHint">No file chosen</span>
-      </div>
-      <div id="result"></div>
-    </div>
-
-    <div class="card">
-      <h2>Roster requirements</h2>
-      <p class="sub">Your roster has to be able to field a team, so the import checks:</p>
-      <ul>
-        <li><b>45&ndash;85 players</b> total</li>
-        <li><b>Every rating 0&ndash;99</b>, no blanks (don't include <code>OVR</code> &mdash; it's calculated)</li>
-        <li><b>Minimum at each position:</b></li>
+    <div class="section-heading"><h3>Ready for your next save</h3><span>Refresh Team Builder after you make roster or template changes.</span></div>
+    <section class="status-card" aria-live="polite">
+      <ul id="statusList" class="status-list">
+        <li class="status-row"><span class="status-dot"></span><span><span class="status-title">Checking saved changes…</span></span></li>
       </ul>
-      <table>
-        <tr><th>Pos</th><th>Min</th><th>Pos</th><th>Min</th><th>Pos</th><th>Min</th></tr>
-        <tr><td>QB</td><td>2</td><td>LT</td><td>1</td><td>LOLB</td><td>1</td></tr>
-        <tr><td>HB</td><td>3</td><td>LG</td><td>1</td><td>MLB</td><td>2</td></tr>
-        <tr><td>FB</td><td>0</td><td>C</td><td>1</td><td>ROLB</td><td>1</td></tr>
-        <tr><td>WR</td><td>5</td><td>RG</td><td>1</td><td>CB</td><td>2</td></tr>
-        <tr><td>TE</td><td>2</td><td>RT</td><td>1</td><td>FS</td><td>2</td></tr>
-        <tr><td>LE</td><td>2</td><td>DT</td><td>3</td><td>SS</td><td>1</td></tr>
-        <tr><td>RE</td><td>2</td><td>K</td><td>1</td><td>P</td><td>1</td></tr>
-      </table>
-      <p class="sub">Two units also have a <b>combined</b> minimum on top of those:</p>
-      <ul>
-        <li><b>8 offensive linemen</b> across <code>LT</code>, <code>LG</code>, <code>C</code>,
-          <code>RG</code>, <code>RT</code></li>
-        <li><b>3 outside linebackers</b> across <code>LOLB</code> and <code>ROLB</code></li>
-      </ul>
-      <p class="muted">
-        How you distribute them is up to you &mdash; three backup tackles and no backup guard is
-        fine &mdash; as long as no single spot is left empty.
-      </p>
-      <p class="muted">
-        If anything's off, the importer tells you the exact row and column &mdash; nothing is
-        imported until it all passes.
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>Column reference</h2>
-      <details>
-        <summary>Show all columns and accepted values</summary>
-        <table>
-          <tr><th>Column</th><th>Accepted values</th></tr>
-          <tr><td><code>firstName</code>, <code>lastName</code></td><td><b>Required.</b> Any text.</td></tr>
-          <tr><td><code>position</code></td><td><b>Required.</b> Must be spelled out exactly &mdash; QB, HB, FB, WR, TE, LT, LG, C, RG, RT, LE, RE, DT, LOLB, MLB, ROLB, CB, FS, SS, K, P. (No aliases like RB, OT, or S &mdash; those are ambiguous about which side.)</td></tr>
-          <tr><td><code>jerseyNumber</code></td><td>0–99</td></tr>
-          <tr><td><code>classYear</code></td><td>FR, SO, JR, SR (or Freshman/Sophomore/Junior/Senior)</td></tr>
-          <tr><td><code>heightInches</code></td><td>Inches (<code>74</code>) or feet-inches (<code>6'2"</code>)</td></tr>
-          <tr><td><code>weightLbs</code></td><td>Real pounds, e.g. <code>209</code></td></tr>
-          <tr><td><code>isLefty</code></td><td>TRUE / FALSE</td></tr>
-          <tr><td><code>skinTone</code></td><td>0–7 &nbsp; (0–1 light, 7 medium-light, 2 medium, 3 medium-dark, 4–6 dark)</td></tr>
-          <tr><td><code>portraitId</code></td><td>Optional EA portrait ID. When present, this exact head is used; when blank, <code>skinTone</code> selects the fallback portrait.</td></tr>
-          <tr><td><code>devTrait</code></td><td>0 Normal, 1 Impact, 2 Star, 3 Elite</td></tr>
-          <tr><td><code>homeTown</code></td><td>Optional hometown text. When blank, the base-template hometown is retained.</td></tr>
-          <tr><td><code>homeTownState</code></td><td>Optional whole-number state ID: 0–49 for Alabama–Wyoming in alphabetical order; 50 for Non-US. When blank, the base-template state is retained.</td></tr>
-          <tr><td><code>OVR</code></td><td>Don't include it &mdash; it's always calculated from the player's ratings and position, and a supplied value is rejected</td></tr>
-          <tr><td>Ratings</td><td><b>All required</b>, 0–99 each: SPD, STR, AGI, ACC, AWR, BTK, TRK, COD, BCV, SFA, SPM, JKM, CAR, CTH, SRR, MRR, DRR, CIT, SPC, RLS, JMP, THP, SAC, MAC, DAC, RUN, TUP, BSK, PAC, TAK, POW, PMV, FMV, BSH, PUR, PRC, MCV, ZCV, PRS, PBK, PBP, PBF, RBK, RBP, RPF, LBK, IBL, KPW, KAC, RET, STA, INJ, TGH, LSP</td></tr>
-        </table>
-        <p class="muted">
-          Players are matched to roster slots by position, best overall rating first. If you have
-          more players at a position than the template does, the extras fill open spots elsewhere;
-          if you have fewer, the leftover template players are removed.
-        </p>
-      </details>
-    </div>
     </section>
-
-    <section id="panel-equipment" class="panel" role="tabpanel" aria-labelledby="tab-equipment">
-      <div class="card equipment-launch">
-        <p class="equipment-launch-kicker">Full web editor</p>
-        <h2>Team Builder Unleashed</h2>
-        <p class="sub">
-          Equipment editing now lives on TeamCrafters, with the complete CFB 27 catalog, searchable
-          previews, bulk actions, and revision-safe saving back to this extension.
-        </p>
-        <div class="equipment-launch-actions">
-          <a class="btn" href="https://www.teamcrafters.net/cfb27/team-builder-unleashed" target="_blank" rel="noopener">Open equipment editor &rarr;</a>
-          <button id="equipmentGoToImport" type="button" class="secondary">Import a CSV roster</button>
-        </div>
-        <div id="equipmentLaunchStatus" class="equipment-launch-status" aria-live="polite">Checking the extension clipboard…</div>
+    <details>
+      <summary>Clear a saved change</summary>
+      <div class="maintenance-actions">
+        <button id="clearRosterBtn" type="button" hidden>Remove saved roster</button>
+        <button id="clearSaveChangesBtn" type="button" hidden>Remove stadium, mascot, uniforms, and templates</button>
       </div>
-    </section>
+    </details>
+    <p class="footer">Need a walkthrough? Visit the <a href="https://www.teamcrafters.net/team-builder-unleashed/help" target="_blank" rel="noopener">Team Builder Unleashed Help Center</a>. Built by TeamCrafters and not affiliated with or endorsed by EA.</p>
   </main>
-
-  <script src="roster-merge.js"></script>
-  <script src="cfb27-position-ovr-calculator.js"></script>
-  <script src="csv-import.js"></script>
-  <script src="uniform-build.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

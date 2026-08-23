@@ -326,14 +326,30 @@ async function run() {
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.equal(inactiveHarness.posted.length, 0);
 
+  const studioHarness = createHarness(fixtureClipboard(), { pathname: '/team-builder-unleashed/cfb27' });
+  studioHarness.dispatch(studioHarness.envelope('TC_UNLEASHED_HELLO', {
+    supportedBridgeVersions: [1],
+    payloadVersion: 1,
+    catalogVersion: 'v1',
+    route: '/team-builder-unleashed/cfb27',
+  }));
+  const studioReady = await studioHarness.waitFor('TC_UNLEASHED_READY');
+  assert.equal(studioReady.payload.extensionVersion, '9.8.7');
+
   const manifest = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
   const bridgeEntry = manifest.content_scripts.find((entry) => entry.js.includes('equipment-web-bridge.js'));
   assert.ok(bridgeEntry, 'manifest must register the equipment web bridge');
   assert.deepEqual(bridgeEntry.matches, [
     'https://www.teamcrafters.net/cfb27/team-builder-unleashed',
     'https://www.teamcrafters.net/cfb27/team-builder-unleashed/',
+    'https://www.teamcrafters.net/team-builder-unleashed/cfb27',
+    'https://www.teamcrafters.net/team-builder-unleashed/cfb27/',
     'http://localhost/cfb27/team-builder-unleashed',
     'http://localhost/cfb27/team-builder-unleashed/',
+    'http://localhost:3000/team-builder-unleashed/cfb27',
+    'http://localhost:3000/team-builder-unleashed/cfb27/',
+    'http://localhost:3001/team-builder-unleashed/cfb27',
+    'http://localhost:3001/team-builder-unleashed/cfb27/',
   ]);
 
   console.log('equipment web bridge tests passed');

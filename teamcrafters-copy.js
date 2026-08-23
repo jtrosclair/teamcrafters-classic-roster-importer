@@ -30,6 +30,10 @@
 (function () {
   const STORAGE_KEY = 'tcRosterClipboard';
   const POLL_INTERVAL_MS = 400;
+  const copyErrors = window.TeamBuilderUnleashedCopyErrors || {
+    blockedCopyMessage: () => null,
+    copyErrorMessage: () => 'We could not copy this roster. Refresh the page and try again.',
+  };
 
   // Sentinel asset URLs live in roster-merge.js so the CSV importer shares them.
   const { ROSTER_URL, VISUALS_URL } = window.TCRosterMerge;
@@ -42,7 +46,10 @@
     }
     const customMatch = location.pathname.match(/^\/app\/customTeams\/(\d+)\/?$/);
     if (customMatch) return { kind: 'custom', customTeamId: customMatch[1] };
-    const teamBuilderMatch = location.pathname.match(/^\/app\/teambuilder\/(CFB27)\/([A-Za-z0-9_-]{6,128})\/?$/i);
+    // Directory teams are published under both the legacy CFB27 namespace and the current CFB
+    // namespace. Preserve the namespace in `game`, because the extension API uses it to locate
+    // the matching published Team Builder payload.
+    const teamBuilderMatch = location.pathname.match(/^\/app\/teambuilder\/(CFB(?:27)?)\/([A-Za-z0-9_-]{6,128})\/?$/i);
     return teamBuilderMatch
       ? { kind: 'team-builder', game: teamBuilderMatch[1].toUpperCase(), teamBuilderId: teamBuilderMatch[2] }
       : null;
@@ -140,6 +147,11 @@
   }
 
   async function copyRoster(ui, route) {
+    const blockedMessage = copyErrors.blockedCopyMessage(route);
+    if (blockedMessage) {
+      flashStatus(ui, blockedMessage, true, 20000);
+      return;
+    }
     setBusy(ui, true);
     setStatus(ui, 'Copying roster…', false);
     try {
@@ -175,7 +187,8 @@
 
       flashStatus(ui, `Copied ${clipboard.source.teamName} — pick it in EA Team Builder presets`, false, 6000);
     } catch (err) {
-      flashStatus(ui, `Copy failed: ${err.message}`, true, 8000);
+      console.warn('[Team Builder Unleashed] Classic roster copy failed.', err);
+      flashStatus(ui, copyErrors.copyErrorMessage(err, route), true, 16000);
     } finally {
       setBusy(ui, false);
     }
@@ -373,7 +386,8 @@
 
       flashStatus(ui, `Copied ${clipboard.source.teamName} — pick it in EA Team Builder presets`, false, 6000);
     } catch (err) {
-      flashStatus(ui, `Copy failed: ${err.message}`, true, 8000);
+      console.warn('[Team Builder Unleashed] Custom team copy failed.', err);
+      flashStatus(ui, copyErrors.copyErrorMessage(err, route), true, 16000);
     } finally {
       setBusy(ui, false);
     }
@@ -392,7 +406,8 @@
         7000
       );
     } catch (err) {
-      flashStatus(ui, `Copy failed: ${err.message}`, true, 8000);
+      console.warn('[Team Builder Unleashed] Team Builder directory copy failed.', err);
+      flashStatus(ui, copyErrors.copyErrorMessage(err, route), true, 16000);
     } finally {
       setBusy(ui, false);
     }

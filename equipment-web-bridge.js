@@ -15,10 +15,14 @@
   const CATALOG_VERSIONS = ['v1'];
   const PAGE_SOURCE = 'teamcrafters-page';
   const EXTENSION_SOURCE = 'teamcrafters-extension';
-  const EDITOR_PATH = '/cfb27/team-builder-unleashed';
+  const EDITOR_PATHS = new Set([
+    '/cfb27/team-builder-unleashed',
+    '/team-builder-unleashed/cfb27',
+  ]);
   const ALLOWED_ORIGINS = new Set([
     'https://www.teamcrafters.net',
     'http://localhost:3000',
+    'http://localhost:3001',
   ]);
   const PAGE_MESSAGE_TYPES = new Set([
     'TC_UNLEASHED_HELLO',
@@ -40,11 +44,11 @@
   const MAX_ASSET_NAME_LENGTH = 512;
   const MAX_REQUEST_ID_LENGTH = 128;
 
-  // Slots exposed by the v1 web editor. Hidden calf placeholders 112/113 are deliberately absent.
+  // Slots exposed by the v1 web editor. Hidden calf placeholders 112/113 and body type are deliberately absent.
   const EDITABLE_SLOT_IDS = new Set([
     0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 96, 97, 101,
     106, 107, 108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122,
-    124, 125, 127, 129, 142, 143,
+    124, 125, 127, 142, 143,
   ]);
 
   const suppressedChangeRevisions = new Set();
@@ -69,7 +73,7 @@
 
   function isAllowedLocation() {
     return ALLOWED_ORIGINS.has(window.location.origin) &&
-      (window.location.pathname === EDITOR_PATH || window.location.pathname === `${EDITOR_PATH}/`);
+      [...EDITOR_PATHS].some((path) => window.location.pathname === path || window.location.pathname === `${path}/`);
   }
 
   // Defense in depth for client-side navigation: a content script injected at the editor route
@@ -208,7 +212,7 @@
   }
 
   function expectedCategoryForSlot(slotId) {
-    return slotId === 129 ? 5 : 0;
+    return 0;
   }
 
   function assertEditableSlot(slotId, category, label) {

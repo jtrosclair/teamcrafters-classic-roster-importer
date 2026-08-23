@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "TeamCrafters Classic Roster Importer",
-  "short_name": "Classic Roster Importer",
-  "version": "0.6.1",
+  "name": "Team Builder Unleashed",
+  "short_name": "TBU",
+  "version": "0.7.0",
   "author": "TeamCrafters",
-  "description": "By TeamCrafters. Copy classic, custom, or Team Builder directory rosters from TeamCrafters, or an EA Team Builder preview, then load them as an \"Import from TeamCrafters\" preset.",
+  "description": "Team Builder Unleashed by TeamCrafters connects the web studio to EA Sports College Football 27 Team Builder.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -20,9 +20,10 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": [
-    "storage"
-  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["alarms", "storage"],
   "host_permissions": [
     "https://www.ea.com/games/ea-sports-college-football/team-builder/*",
     "https://www.teamcrafters.net/app/classic-rosters/*",
@@ -35,10 +36,7 @@
       "matches": [
         "https://www.ea.com/games/ea-sports-college-football/team-builder/*"
       ],
-      "js": [
-        "uniform-config.js",
-        "inject.js"
-      ],
+      "js": ["uniform-config.js", "inject.js"],
       "world": "MAIN",
       "run_at": "document_start"
     },
@@ -46,22 +44,29 @@
       "matches": [
         "https://www.ea.com/games/ea-sports-college-football/team-builder/*"
       ],
+      "js": ["csv-import.js", "csv-export.js", "ea-bridge.js"],
+      "world": "ISOLATED",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.teamcrafters.net/app/classic-rosters/*"],
       "js": [
+        "roster-merge.js",
         "csv-import.js",
         "csv-export.js",
-        "ea-bridge.js"
+        "copy-error-messages.js",
+        "teamcrafters-copy.js"
       ],
       "world": "ISOLATED",
       "run_at": "document_start"
     },
     {
-      "matches": [
-        "https://www.teamcrafters.net/app/classic-rosters/*"
-      ],
+      "matches": ["https://www.teamcrafters.net/app/customTeams/*"],
       "js": [
         "roster-merge.js",
         "csv-import.js",
         "csv-export.js",
+        "copy-error-messages.js",
         "teamcrafters-copy.js"
       ],
       "world": "ISOLATED",
@@ -69,12 +74,14 @@
     },
     {
       "matches": [
-        "https://www.teamcrafters.net/app/customTeams/*"
+        "https://www.teamcrafters.net/app/teambuilder/CFB27/*",
+        "https://www.teamcrafters.net/app/teambuilder/CFB/*"
       ],
       "js": [
         "roster-merge.js",
         "csv-import.js",
         "csv-export.js",
+        "copy-error-messages.js",
         "teamcrafters-copy.js"
       ],
       "world": "ISOLATED",
@@ -82,13 +89,25 @@
     },
     {
       "matches": [
-        "https://www.teamcrafters.net/app/teambuilder/CFB27/*"
+        "https://www.teamcrafters.net/team-builder-unleashed",
+        "https://www.teamcrafters.net/team-builder-unleashed/",
+        "https://www.teamcrafters.net/team-builder-unleashed/cfb27",
+        "https://www.teamcrafters.net/team-builder-unleashed/cfb27/",
+        "http://localhost:3000/team-builder-unleashed",
+        "http://localhost:3000/team-builder-unleashed/",
+        "http://localhost:3000/team-builder-unleashed/cfb27",
+        "http://localhost:3000/team-builder-unleashed/cfb27/",
+        "http://localhost:3001/team-builder-unleashed",
+        "http://localhost:3001/team-builder-unleashed/",
+        "http://localhost:3001/team-builder-unleashed/cfb27",
+        "http://localhost:3001/team-builder-unleashed/cfb27/"
       ],
       "js": [
         "roster-merge.js",
+        "cfb27-position-ovr-calculator.js",
         "csv-import.js",
-        "csv-export.js",
-        "teamcrafters-copy.js"
+        "uniform-build.js",
+        "studio-web-bridge.js"
       ],
       "world": "ISOLATED",
       "run_at": "document_start"
@@ -97,12 +116,16 @@
       "matches": [
         "https://www.teamcrafters.net/cfb27/team-builder-unleashed",
         "https://www.teamcrafters.net/cfb27/team-builder-unleashed/",
+        "https://www.teamcrafters.net/team-builder-unleashed/cfb27",
+        "https://www.teamcrafters.net/team-builder-unleashed/cfb27/",
         "http://localhost/cfb27/team-builder-unleashed",
-        "http://localhost/cfb27/team-builder-unleashed/"
+        "http://localhost/cfb27/team-builder-unleashed/",
+        "http://localhost:3000/team-builder-unleashed/cfb27",
+        "http://localhost:3000/team-builder-unleashed/cfb27/",
+        "http://localhost:3001/team-builder-unleashed/cfb27",
+        "http://localhost:3001/team-builder-unleashed/cfb27/"
       ],
-      "js": [
-        "equipment-web-bridge.js"
-      ],
+      "js": ["equipment-web-bridge.js"],
       "world": "ISOLATED",
       "run_at": "document_start"
     }
@@ -112,10 +135,15 @@
       "resources": [
         "base-template/roster.json",
         "base-template/character_visuals.json",
-        "reference/portrait-catalog.json"
+      "reference/portrait-catalog.json",
+      "reference/mascots.json",
+      "reference/stadiums.json",
+      "uniform-catalog.json"
       ],
       "matches": [
-        "https://www.teamcrafters.net/*"
+        "https://www.teamcrafters.net/*",
+        "http://localhost:3000/*",
+        "http://localhost:3001/*"
       ]
     }
   ],

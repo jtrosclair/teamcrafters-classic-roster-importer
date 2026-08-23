@@ -35,6 +35,75 @@
   // template IS Cupcake, so this is the id our roster is valid against.
   const CUPCAKE_PRESET_ID = 1238;
 
+  // === Advanced uniform-placement range extension =========================================
+  // The uniform editor renders its placement controls inside this Angular component. Four of
+  // those native ranges have a max of 2 (with min values of 1 or .01); changing their DOM max is
+  // enough for the component's normal input binding to emit values through 3. Angular can replace
+  // or re-bind the inputs while editing, so keep the patch scoped to this component and reapply it
+  // whenever its subtree changes.
+  const ADVANCED_PLACEMENT_SELECTOR = 'app-advanced-placement-api';
+  const ADVANCED_PLACEMENT_RANGE_MAX = '3';
+
+  function isExtendedPlacementRange(input) {
+    if (!(input instanceof HTMLInputElement) || input.type !== 'range') return false;
+    if (!input.closest(ADVANCED_PLACEMENT_SELECTOR)) return false;
+
+    const min = Number(input.min);
+    const max = Number(input.max);
+    return max === 2 && (min === 1 || min === 0.01);
+  }
+
+  function extendAdvancedPlacementRange(input) {
+    if (!isExtendedPlacementRange(input)) return false;
+    input.max = ADVANCED_PLACEMENT_RANGE_MAX;
+    return true;
+  }
+
+  function extendAdvancedPlacementRanges(root = document) {
+    if (!(root instanceof Document || root instanceof Element || root instanceof DocumentFragment)) {
+      return;
+    }
+
+    if (root instanceof HTMLInputElement) extendAdvancedPlacementRange(root);
+    root.querySelectorAll?.(`${ADVANCED_PLACEMENT_SELECTOR} input[type="range"]`).forEach(
+      extendAdvancedPlacementRange
+    );
+  }
+
+  function observeAdvancedPlacementRanges() {
+    extendAdvancedPlacementRanges();
+
+    // Capture phase makes sure a freshly re-bound range is fixed before the editor processes its
+    // input/change event. This stays limited to the placement component.
+    document.addEventListener(
+      'input',
+      (event) => extendAdvancedPlacementRange(event.target),
+      true
+    );
+    document.addEventListener(
+      'change',
+      (event) => extendAdvancedPlacementRange(event.target),
+      true
+    );
+
+    new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes') {
+          extendAdvancedPlacementRange(mutation.target);
+          continue;
+        }
+        for (const node of mutation.addedNodes) extendAdvancedPlacementRanges(node);
+      }
+    }).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['min', 'max', 'type'],
+    });
+  }
+
+  observeAdvancedPlacementRanges();
+
   // === Uniform replacement on save =======================================================
   // Saving a team PUTs the whole team payload to a pre-signed S3 URL. When a uniform set is armed
   // (picked on the options page, stored by uniform-build.js) we hold that request, append the
@@ -1098,24 +1167,28 @@
   // Get all user-armed save changes before reading the body. Returning null lets the caller send
   // the original request unchanged when neither uniforms, a mascot, nor a stadium are selected.
   async function chooseSaveUploadText(originalBody) {
-    const [armed, mascot, stadium] = await Promise.all([
+    const [armed, mascot, stadium, settings] = await Promise.all([
       getArmedUniforms(),
       getArmedMascot(),
       getArmedStadium(),
+      getUnleashedSaveSettings(),
     ]);
-    const mascotArmed = typeof mascot?.assetName === 'string' && mascot.assetName.trim();
-    const stadiumArmed = Number.isInteger(stadium?.stadiumId);
-    if (!(armed && Array.isArray(armed.uniforms) && armed.uniforms.length) && !mascotArmed && !stadiumArmed) {
+    const uniformArmed = settings.uniforms !== false && armed && Array.isArray(armed.uniforms) && armed.uniforms.length;
+    const mascotArmed = settings.mascot !== false && typeof mascot?.assetName === 'string' && mascot.assetName.trim();
+    const stadiumArmed = settings.stadium !== false && Number.isInteger(stadium?.stadiumId);
+    if (!uniformArmed && !mascotArmed && !stadiumArmed) {
       return null;
     }
 
     const originalText = await bodyToText(originalBody);
-    const uniformChoice =
-      armed && Array.isArray(armed.uniforms) && armed.uniforms.length
-        ? await promptUniformSwap(originalText, armed)
-        : originalText;
+    let uniformChoice = originalText;
+    if (uniformArmed) {
+      const payload = JSON.parse(originalText);
+      applyUniformSet(payload, armed);
+      uniformChoice = JSON.stringify(payload);
+    }
     const mascotChoice = mascotArmed ? applyArmedMascot(uniformChoice, mascot) : uniformChoice;
-    return stadiumArmed ? promptStadiumSwap(mascotChoice, stadium) : mascotChoice;
+    return stadiumArmed ? applyArmedStadium(mascotChoice, stadium) : mascotChoice;
   }
 
   // === end save upload modifications ======================================================
@@ -1165,6 +1238,20 @@
       }
       window.addEventListener('tc-stadium-clipboard-response', onResponse);
       window.dispatchEvent(new CustomEvent('tc-stadium-clipboard-request'));
+    });
+  }
+
+  // The top-left Team Builder Unleashed bar controls which armed save-time
+  // updates are active. Missing settings retain the original safe defaults.
+  function getUnleashedSaveSettings() {
+    return new Promise((resolve) => {
+      function onResponse(e) {
+        window.removeEventListener('tc-unleashed-save-settings-response', onResponse);
+        const value = e.detail;
+        resolve(value && typeof value === 'object' ? value : {});
+      }
+      window.addEventListener('tc-unleashed-save-settings-response', onResponse);
+      window.dispatchEvent(new CustomEvent('tc-unleashed-save-settings-request'));
     });
   }
 

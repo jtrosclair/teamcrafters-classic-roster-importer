@@ -1,139 +1,120 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>TeamCrafters Classic Roster Importer</title>
-<style>
-  :root { color-scheme: light; }
-  body {
-    margin: 0;
-    width: 320px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #1b1f24;
-  }
-  header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    background: linear-gradient(135deg, #2b7cf0, #0f4fb0);
-    color: #fff;
-  }
-  header img { width: 28px; height: 28px; border-radius: 6px; }
-  header h1 { font-size: 14px; margin: 0; line-height: 1.3; }
-  main { padding: 16px; }
-  .status-card {
-    border: 1px solid #e2e5ea;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-  .status-card.empty { color: #5f6b7a; }
-  .status-card .team-name { font-weight: 600; font-size: 14px; color: #0f4fb0; }
-  .status-card .meta { color: #5f6b7a; margin-top: 2px; }
-  .status-card .meta a { color: #2b7cf0; text-decoration: none; font-weight: 600; }
-  .status-card .meta a:hover { text-decoration: underline; }
-  .hint {
-    margin-top: 12px;
-    font-size: 12px;
-    color: #5f6b7a;
-    line-height: 1.5;
-  }
-  .update-card {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 2px 16px 14px;
-    padding: 9px 10px;
-    border: 1px solid #bcd5f5;
-    border-left: 3px solid #2b7cf0;
-    border-radius: 6px;
-    background: #f4f8ff;
-    font-size: 12px;
-    line-height: 1.35;
-    color: #31465f;
-  }
-  .update-card strong { color: #0f4fb0; white-space: nowrap; }
-  .update-card a { color: #0f4fb0; font-weight: 700; text-decoration: none; margin-left: auto; white-space: nowrap; }
-  .update-card a:hover { text-decoration: underline; }
-  button {
-    margin-top: 12px;
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid #d7dbe0;
-    border-radius: 6px;
-    background: #f5f6f8;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    color: #b00020;
-  }
-  button:hover { background: #eceef1; }
-  footer {
-    padding: 10px 16px 14px;
-    font-size: 11px;
-    color: #8a94a3;
-    line-height: 1.5;
-    border-top: 1px solid #eef0f3;
-  }
-  footer a {
-    color: #2b7cf0;
-    font-weight: 600;
-    text-decoration: none;
-  }
-  footer a:hover { text-decoration: underline; }
-</style>
+  <meta charset="utf-8">
+  <title>Team Builder Unleashed</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      width: 352px;
+      margin: 0;
+      background: #0f1219;
+      color: #f7f9fc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 16px;
+      border-bottom: 1px solid #334155;
+      background: #111827;
+    }
+    header img { width: 30px; height: 30px; border-radius: 7px; }
+    .brand { min-width: 0; }
+    .brand-kicker {
+      margin: 0 0 2px;
+      color: #60a5fa;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.2; }
+    main { padding: 16px; }
+    .intro { margin: 0 0 14px; color: #c7d2df; font-size: 13px; line-height: 1.5; }
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    a.button, button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 8px 10px;
+      border: 1px solid #334155;
+      border-radius: 7px;
+      background: #1a1f2e;
+      color: #f7f9fc;
+      font: 700 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    a.button.primary { border-color: #2b7cf0; background: #2b7cf0; color: #fff; }
+    a.button:hover, button:hover { border-color: #60a5fa; background: #242c3e; }
+    a.button.primary:hover { background: #1f6de0; }
+    .maintenance { margin-top: 12px; }
+    .maintenance summary { color: #aab5c4; font-size: 11.5px; cursor: pointer; }
+    .maintenance-panel { display: grid; gap: 8px; margin-top: 8px; }
+    .maintenance button { min-height: 32px; color: #fecaca; font-size: 11.5px; }
+    .update-card {
+      margin-top: 12px;
+      padding: 9px 10px;
+      border: 1px solid #334155;
+      border-radius: 7px;
+      background: #111827;
+      color: #aab5c4;
+      font-size: 11.5px;
+      line-height: 1.35;
+    }
+    .update-card[data-status="update-available"] { border-color: #31598e; border-left: 3px solid #60a5fa; background: #17243a; }
+    .update-heading { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .update-card strong { color: #f7f9fc; }
+    .update-label { color: #aab5c4; font-size: 10.5px; font-weight: 700; }
+    .update-card[data-status="update-available"] .update-label { color: #bfdbfe; }
+    .update-card p { margin: 4px 0 0; }
+    .update-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+    .update-card a { display: inline-flex; align-items: center; color: #93c5fd; font-size: 11px; font-weight: 700; text-decoration: none; }
+    .update-card button { min-height: 28px; padding: 5px 8px; font-size: 11px; }
+    footer { padding: 11px 16px 14px; border-top: 1px solid #263142; color: #7f8da1; font-size: 10.5px; line-height: 1.45; }
+    footer a { color: #93c5fd; font-weight: 700; text-decoration: none; }
+  </style>
 </head>
 <body>
   <header>
     <img src="icons/icon48.png" alt="">
-    <h1>TeamCrafters Classic Roster Importer</h1>
+    <div class="brand">
+      <p class="brand-kicker">TeamCrafters</p>
+      <h1>Team Builder Unleashed</h1>
+    </div>
   </header>
   <main>
-    <div id="status" class="status-card empty">Loading…</div>
-    <button id="clearBtn" style="display:none;">Clear copied roster</button>
-    <div id="uniformStatus" class="status-card empty" style="margin-top:10px;">Loading…</div>
-    <button id="clearUniformBtn" style="display:none;">Clear team uniforms</button>
-    <div id="mascotStatus" class="status-card empty" style="margin-top:10px;">Loading…</div>
-    <button id="clearMascotBtn" style="display:none;">Clear team mascot</button>
-    <div id="stadiumStatus" class="status-card empty" style="margin-top:10px;">Loading…</div>
-    <button id="clearStadiumBtn" style="display:none;">Clear stadium</button>
-    <div class="hint">
-      1. On a TeamCrafters classic, custom, or CFB 27 Team Builder directory page, click the
-      "Copy For Team Builder" button — or open an EA Team Builder preview and click "Copy roster for Team Builder".<br>
-      2. In EA College Football Team Builder, open the roster presets and pick the
-      <b>TeamCrafters</b> entry — it loads the copied roster.
+    <p class="intro">Choose your changes in the web studio, then save your team in Team Builder. This extension safely carries those choices over.</p>
+    <div class="button-row">
+      <a id="studioLink" class="button primary" href="#">Open CFB 27 studio</a>
+      <a id="helpLink" class="button" href="#">Help &amp; guides</a>
     </div>
-    <div class="hint">
-      Or <a href="#" id="csvLink">import a roster from a CSV</a> instead.
-    </div>
-    <div class="hint">
-      <a href="#" id="uniformLink">Choose team uniforms</a> to swap in a real school's set.
-    </div>
-    <div class="hint">
-      <a href="#" id="mascotLink">Choose a team mascot</a> to add on your next save.
-    </div>
-    <div class="hint">
-      <a href="#" id="stadiumLink">Choose a stadium</a> to add on your next save.
-    </div>
-    <div class="hint">
-      <a href="#" id="schoolTemplatesLink">Create school templates</a> for Team Builder's school-template picker.
-    </div>
-    <div class="hint">
-      <a href="#" id="equipmentLink">Open Team Builder Unleashed</a> to modify player equipment.
-    </div>
+    <details class="maintenance">
+      <summary>Need to remove a saved change?</summary>
+      <div class="maintenance-panel">
+        <button id="clearRosterBtn" type="button" hidden>Remove saved roster</button>
+        <button id="clearSaveChangesBtn" type="button" hidden>Remove stadium, mascot, and uniforms</button>
+      </div>
+    </details>
+    <section id="updateStatus" class="update-card" aria-live="polite" data-status="checking">
+      <div class="update-heading"><strong>Updates</strong><span id="updateLabel" class="update-label">Checking…</span></div>
+      <p id="updateText">Looking for the latest public release.</p>
+      <div class="update-actions">
+        <a id="updateLink" href="#" target="_blank" rel="noopener" hidden>View release</a>
+        <button id="checkUpdateBtn" type="button">Check now</button>
+      </div>
+    </section>
   </main>
-  <div id="updateStatus" class="update-card" hidden>
-    <strong>Update available</strong>
-    <span id="updateText"></span>
-    <a id="updateLink" href="#" target="_blank" rel="noopener">View release &rarr;</a>
-  </div>
   <footer>
-    Built by TeamCrafters. <a href="https://discord.gg/nNBwRh4Rj5" target="_blank" rel="noopener">Join our Discord &rarr;</a><br>
-    Not affiliated with or endorsed by EA. Nothing is
-    uploaded until you press EA's own Save button.
+    Built by TeamCrafters. <a href="https://discord.gg/nNBwRh4Rj5" target="_blank" rel="noopener">Get help in Discord</a><br>
+    Not affiliated with or endorsed by EA. Your team is only saved when you use EA's Save button.
   </footer>
+  <script src="update-checker.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

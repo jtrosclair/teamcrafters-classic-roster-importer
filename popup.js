@@ -1,241 +1,132 @@
-// TeamCrafters Classic Roster Importer
+// Team Builder Unleashed
 // Copyright (C) 2026 TeamCrafters
 //
 // This program is free software: you can redistribute it and/or modify it under the
 // terms of the GNU General Public License as published by the Free Software Foundation,
 // either version 3 of the License, or (at your option) any later version. This program
 // is distributed WITHOUT ANY WARRANTY; see the GNU General Public License for details.
-// You should have received a copy of the license along with this program (see LICENSE);
-// if not, see <https://www.gnu.org/licenses/>.
 
-const STORAGE_KEY = 'tcRosterClipboard';
-const UNIFORM_KEY = 'tcUniformClipboard';
-const MASCOT_KEY = 'tcMascotClipboard';
-const STADIUM_KEY = 'tcStadiumClipboard';
-const UPDATE_CACHE_KEY = 'tcReleaseUpdateCache';
-const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
-const RELEASES_API = 'https://api.github.com/repos/jtrosclair/teamcrafters-classic-roster-importer/releases/latest';
-const RELEASES_PAGE = 'https://github.com/jtrosclair/teamcrafters-classic-roster-importer/releases/latest';
+const KEYS = {
+  roster: 'tcRosterClipboard',
+  uniforms: 'tcUniformClipboard',
+  mascot: 'tcMascotClipboard',
+  stadium: 'tcStadiumClipboard',
+  templates: 'tcSchoolTemplates',
+};
+const STUDIO_URL = 'https://www.teamcrafters.net/team-builder-unleashed/cfb27';
+const HELP_URL = 'https://www.teamcrafters.net/team-builder-unleashed/help';
+const updateManager = TeamBuilderUnleashedUpdates;
 
-function parseVersion(version) {
-  const pieces = String(version || '').replace(/^v/i, '').split('.');
-  if (!pieces.length || pieces.some((piece) => !/^\d+$/.test(piece))) return null;
-  return pieces.map(Number);
-}
-
-function isNewerVersion(candidate, current) {
-  const next = parseVersion(candidate);
-  const installed = parseVersion(current);
-  if (!next || !installed) return false;
-  const length = Math.max(next.length, installed.length);
-  for (let i = 0; i < length; i++) {
-    const difference = (next[i] || 0) - (installed[i] || 0);
-    if (difference) return difference > 0;
+function formatCheckedAt(timestamp) {
+  if (!timestamp) return 'Not checked yet.';
+  try {
+    return `Checked ${new Date(timestamp).toLocaleString()}.`;
+  } catch {
+    return 'Checked recently.';
   }
-  return false;
 }
 
-function renderUpdate(update) {
+function renderUpdate(state) {
   const card = document.getElementById('updateStatus');
-  if (!update || !update.available) {
-    card.hidden = true;
-    return;
-  }
-  document.getElementById('updateText').textContent = `v${update.version} is ready.`;
-  document.getElementById('updateLink').href = update.url || RELEASES_PAGE;
-  card.hidden = false;
-}
+  const label = document.getElementById('updateLabel');
+  const message = document.getElementById('updateText');
+  const link = document.getElementById('updateLink');
+  card.dataset.status = state?.status || 'unknown';
+  link.hidden = true;
 
-function checkForUpdate() {
-  chrome.storage.local.get(UPDATE_CACHE_KEY, async (result) => {
-    const cached = result[UPDATE_CACHE_KEY];
-    if (cached && Date.now() - cached.checkedAt < UPDATE_CHECK_INTERVAL_MS) {
-      renderUpdate({ ...cached, available: isNewerVersion(cached.version, chrome.runtime.getManifest().version) });
-      return;
-    }
-
-    try {
-      const response = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' } });
-      if (!response.ok) throw new Error(`Release request failed (${response.status})`);
-      const release = await response.json();
-      const version = String(release.tag_name || '').replace(/^v/i, '');
-      if (!parseVersion(version)) throw new Error('Latest release has no usable version tag');
-      const update = {
-        checkedAt: Date.now(),
-        version,
-        url: release.html_url || RELEASES_PAGE,
-      };
-      await chrome.storage.local.set({ [UPDATE_CACHE_KEY]: update });
-      renderUpdate({ ...update, available: isNewerVersion(version, chrome.runtime.getManifest().version) });
-    } catch {
-      // Offline, rate-limited, or unpublished releases are non-fatal: leave the popup unchanged.
-    }
-  });
-}
-
-function formatCopiedAt(iso) {
-  try { return new Date(iso).toLocaleString(); } catch { return iso; }
-}
-
-function render(stored) {
-  const statusEl = document.getElementById('status');
-  const clearBtn = document.getElementById('clearBtn');
-
-  if (!stored) {
-    statusEl.className = 'status-card empty';
-    statusEl.innerHTML = `
-      <div>No roster copied yet.</div>
-      <div class="meta"><a href="https://www.teamcrafters.net/app/classic-rosters" target="_blank" rel="noopener">View all classic rosters &rarr;</a></div>
-    `;
-    clearBtn.style.display = 'none';
+  if (!state || state.status === 'checking') {
+    label.textContent = 'Checking…';
+    message.textContent = 'Looking for the latest public release.';
     return;
   }
 
-  const stats = stored.stats || {};
-  const extra = [];
-  if (stats.unplacedPlayers) extra.push(`${stats.unplacedPlayers} players didn’t fit`);
-  const sourceLabel = stats.copiedFromTeamBuilder
-    ? 'View source Team Builder team →'
-    : 'View source team on TeamCrafters →';
-
-  statusEl.className = 'status-card';
-  statusEl.innerHTML = `
-    <div class="team-name">${stored.teamName ?? 'Unknown team'}</div>
-    <div class="meta">${stored.playerCount ?? '?'} players copied</div>
-    <div class="meta">Copied ${stored.copiedAt ? formatCopiedAt(stored.copiedAt) : 'unknown time'}</div>
-    ${stored.equipmentEditedAt ? '<div class="meta">Custom equipment saved</div>' : ''}
-    ${extra.length ? `<div class="meta">${extra.join(' · ')}</div>` : ''}
-    ${stored.sourceUrl ? `<div class="meta"><a href="${stored.sourceUrl}" target="_blank" rel="noopener">${sourceLabel}</a></div>` : ''}
-  `;
-  clearBtn.style.display = 'block';
-}
-
-function renderUniforms(armed) {
-  const el = document.getElementById('uniformStatus');
-  const clearBtn = document.getElementById('clearUniformBtn');
-
-  if (!armed) {
-    el.className = 'status-card empty';
-    el.innerHTML = '<div>No team uniforms selected.</div>';
-    clearBtn.style.display = 'none';
+  if (state.status === 'update-available') {
+    label.textContent = 'Update available';
+    message.textContent = `Version v${state.latestVersion} is ready. You have v${state.installedVersion}.`;
+    link.href = state.downloadUrl || state.releaseUrl;
+    link.textContent = state.downloadUrl ? 'Download update' : 'View release';
+    link.hidden = false;
     return;
   }
 
-  el.className = 'status-card';
-  el.innerHTML = `
-    <div class="team-name">${armed.teamName ?? 'Unknown team'} uniforms</div>
-    <div class="meta">${armed.uniformCount ?? '?'} uniforms ready</div>
-    <div class="meta">Save in Team Builder to apply — you'll confirm first.</div>
-  `;
-  clearBtn.style.display = 'block';
-}
-
-function renderMascot(armed) {
-  const el = document.getElementById('mascotStatus');
-  const clearBtn = document.getElementById('clearMascotBtn');
-
-  if (!armed?.assetName) {
-    el.className = 'status-card empty';
-    el.innerHTML = '<div>No team mascot selected.</div>';
-    clearBtn.style.display = 'none';
+  if (state.status === 'ahead') {
+    label.textContent = 'Newer build installed';
+    message.textContent = `You have v${state.installedVersion}; the latest public release is v${state.latestVersion}. ${formatCheckedAt(state.checkedAt)}`;
     return;
   }
 
-  el.className = 'status-card';
-  el.innerHTML = `
-    <div class="team-name">${armed.teamName ?? 'Selected team'} mascot</div>
-    <div class="meta">${armed.mascotName ?? 'Mascot'} · ${armed.assetName}</div>
-    <div class="meta">Save in Team Builder to apply.</div>
-  `;
-  clearBtn.style.display = 'block';
-}
-
-function renderStadium(armed) {
-  const el = document.getElementById('stadiumStatus');
-  const clearBtn = document.getElementById('clearStadiumBtn');
-
-  if (!Number.isInteger(armed?.stadiumId)) {
-    el.className = 'status-card empty';
-    el.innerHTML = '<div>No stadium selected.</div>';
-    clearBtn.style.display = 'none';
+  if (state.status === 'up-to-date') {
+    label.textContent = 'Up to date';
+    message.textContent = `You have the latest public release (v${state.installedVersion}). ${formatCheckedAt(state.checkedAt)}`;
     return;
   }
 
-  el.className = 'status-card';
-  el.innerHTML = `
-    <div class="team-name">${armed.displayName ?? 'Selected stadium'}</div>
-    <div class="meta">Stadium ID · ${armed.stadiumId}</div>
-    <div class="meta">Save in Team Builder to apply.</div>
-  `;
-  clearBtn.style.display = 'block';
+  label.textContent = 'Could not check';
+  message.textContent = state.lastError || 'No update result is available yet. Check your connection and try again.';
 }
 
-chrome.storage.local.get(STORAGE_KEY, (result) => {
-  render(result[STORAGE_KEY] || null);
-});
-
-chrome.storage.local.get(UNIFORM_KEY, (result) => {
-  renderUniforms(result[UNIFORM_KEY] || null);
-});
-
-chrome.storage.local.get(MASCOT_KEY, (result) => {
-  renderMascot(result[MASCOT_KEY] || null);
-});
-
-chrome.storage.local.get(STADIUM_KEY, (result) => {
-  renderStadium(result[STADIUM_KEY] || null);
-});
-
-checkForUpdate();
-
-document.getElementById('clearBtn').addEventListener('click', () => {
-  chrome.storage.local.remove(STORAGE_KEY, () => render(null));
-});
-
-document.getElementById('clearUniformBtn').addEventListener('click', () => {
-  chrome.storage.local.remove(UNIFORM_KEY, () => renderUniforms(null));
-});
-
-document.getElementById('clearMascotBtn').addEventListener('click', () => {
-  chrome.storage.local.remove(MASCOT_KEY, () => renderMascot(null));
-});
-
-document.getElementById('clearStadiumBtn').addEventListener('click', () => {
-  chrome.storage.local.remove(STADIUM_KEY, () => renderStadium(null));
-});
-
-// Open the options page on a specific tab. openOptionsPage() can't carry a hash, so target the
-// panel directly; the options page reads the hash to pick which tool to show.
-function openOptions(panelId) {
-  chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${panelId}`) });
+async function refreshUpdate(force = false) {
+  const button = document.getElementById('checkUpdateBtn');
+  button.disabled = true;
+  button.textContent = 'Checking…';
+  renderUpdate({ status: 'checking' });
+  try {
+    renderUpdate(await updateManager.checkForUpdates({ force }));
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Check now';
+  }
 }
 
-document.getElementById('csvLink').addEventListener('click', (e) => {
-  e.preventDefault();
-  openOptions('panel-csv');
+function renderMaintenance(stored) {
+  const roster = stored[KEYS.roster];
+  const uniforms = stored[KEYS.uniforms];
+  const mascot = stored[KEYS.mascot];
+  const stadium = stored[KEYS.stadium];
+  const templates = stored[KEYS.templates];
+  document.getElementById('clearRosterBtn').hidden = !roster;
+  document.getElementById('clearSaveChangesBtn').hidden = !(
+    uniforms || mascot || stadium || (Array.isArray(templates) && templates.length)
+  );
+}
+
+function openTab(url) {
+  chrome.tabs.create({ url });
+}
+
+document.getElementById('studioLink').addEventListener('click', (event) => {
+  event.preventDefault();
+  openTab(STUDIO_URL);
+});
+document.getElementById('helpLink').addEventListener('click', (event) => {
+  event.preventDefault();
+  openTab(HELP_URL);
 });
 
-document.getElementById('uniformLink').addEventListener('click', (e) => {
-  e.preventDefault();
-  openOptions('panel-uniforms');
+document.getElementById('clearRosterBtn').addEventListener('click', async () => {
+  if (!confirm('Remove the saved roster? This does not change a team you already saved in EA Team Builder.')) return;
+  await chrome.storage.local.remove(KEYS.roster);
 });
 
-document.getElementById('mascotLink').addEventListener('click', (e) => {
-  e.preventDefault();
-  openOptions('panel-mascot');
+document.getElementById('clearSaveChangesBtn').addEventListener('click', async () => {
+  if (!confirm('Remove saved stadium, mascot, uniform, and school-template changes? This does not change a team you already saved in EA Team Builder.')) return;
+  await chrome.storage.local.remove([KEYS.uniforms, KEYS.mascot, KEYS.stadium, KEYS.templates]);
 });
 
-document.getElementById('stadiumLink').addEventListener('click', (e) => {
-  e.preventDefault();
-  openOptions('panel-stadium');
+chrome.storage.local.get(Object.values(KEYS), renderMaintenance);
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local') return;
+  if (Object.values(KEYS).some((key) => changes[key])) {
+    chrome.storage.local.get(Object.values(KEYS), renderMaintenance);
+  }
+  if (changes[updateManager.UPDATE_STATE_KEY]) {
+    renderUpdate(changes[updateManager.UPDATE_STATE_KEY].newValue || null);
+  }
 });
 
-document.getElementById('schoolTemplatesLink').addEventListener('click', (e) => {
-  e.preventDefault();
-  openOptions('panel-school-templates');
+document.getElementById('checkUpdateBtn').addEventListener('click', () => {
+  void refreshUpdate(true);
 });
 
-document.getElementById('equipmentLink').addEventListener('click', (e) => {
-  e.preventDefault();
-  chrome.tabs.create({ url: 'https://www.teamcrafters.net/cfb27/team-builder-unleashed' });
-});
+void updateManager.getUpdateState().then(renderUpdate);
+void refreshUpdate();

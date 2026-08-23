@@ -1,5 +1,42 @@
 # Changelog
 
+## Unreleased
+
+## v0.7.0 — 2026-08-23
+
+### Team Builder Unleashed
+
+- Rebrand the extension as **Team Builder Unleashed**. It is now the companion connection for
+  TeamCrafters' web-based CFB 27 Studio.
+- Move creator-facing editing to the Studio: manage rosters, player details and portraits,
+  equipment, stadiums, mascots, prestige ratings, templates, and uniform overrides from the web
+  instead of a crowded extension settings page.
+- Keep the extension focused on the part only Chrome can do: carry Studio changes into EA Team
+  Builder when you use EA's normal **Save** button, show what is staged, and let you remove a
+  staged change safely.
+- Refresh the popup and settings page with direct Studio and Help Center links so the next step is
+  always clear.
+
+### Before you save
+
+- For roster and player changes, refresh the open Team Builder page, select another roster template
+  such as **Spread**, then select **TeamCrafters** again before saving. EA only reloads the staged
+  roster after both steps.
+- EA may patch Team Builder at any time. In particular, uniform overrides replace the team's
+  current uniform set with the selected real team's uniforms; confirm the result before relying on
+  it in a finished team.
+
+### Additional improvements
+
+- Rebuild update checking with scheduled background checks, conditional GitHub requests, a visible
+  manual **Check now** action, and clear states for available updates, newer local builds, and
+  connection problems.
+- Explain roster-copy failures in plain language. NCAA 98–01 now clearly report that PS1-era
+  ratings conversion is incomplete and that support is coming, instead of exposing an internal
+  conversion error.
+- Support **Copy team for Team Builder** and **Download CSV** on current TeamCrafters Team Builder
+  directory URLs: `/app/teambuilder/CFB/[id]`.
+
 ## v0.6.1 — 2026-08-13
 
 ### Fixes

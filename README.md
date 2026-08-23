@@ -1,8 +1,10 @@
-# TeamCrafters Classic Roster Importer
+# Team Builder Unleashed
 
-A Chrome extension that copies a classic college football roster (NCAA 14 and older) or a public
-custom-team roster from [TeamCrafters](https://www.teamcrafters.net) into **EA Sports College
-Football 27 Team Builder**, by adding it to Team Builder's own roster-presets list.
+Team Builder Unleashed is the Chrome bridge for the
+[Team Builder Unleashed Studio](https://www.teamcrafters.net/team-builder-unleashed/cfb27).
+Choose your CFB 27 roster, player, stadium, mascot, prestige, or template changes in the web
+studio, then use EA Team Builder's normal **Save** button. This extension keeps those choices
+ready and applies them only when you save.
 
 Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Electronic Arts.
 
@@ -19,16 +21,19 @@ Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Elec
 
 ## What it does
 
-Pick any classic team on TeamCrafters (say, 2012 Alabama), or a public custom team. Click a button.
-Then, in EA's Team Builder, that roster shows up in the presets list — pick it, and the whole roster
-is replaced with those real players: names, ratings, positions, class years, height/weight, and
-skin tones.
+The Studio is where you make changes. The extension is the small connection between the Studio and
+EA Team Builder. It shows a compact list of changes ready for your next save in the top-left corner
+of Team Builder, where you can turn an individual stadium, mascot, or uniform change on or off.
+
+Use the Studio's plain-language guides whenever you need help:
+[Team Builder Unleashed Help](https://www.teamcrafters.net/team-builder-unleashed/help).
 
 Nothing is uploaded to EA until *you* press EA's own **Save**.
 
 ## Supported Games/Consoles
 
-This extension is a simple update utility for CFB 27 Team Builder. PC's and Consoles are both supported on any device that can log in and download from Team Builder.
+Team Builder Unleashed currently supports CFB 27 Team Builder. PC and console players can use the
+teams they create, as long as they can access Team Builder from a computer running Chrome.
 
 ## What you need
 
@@ -40,30 +45,34 @@ This extension is a simple update utility for CFB 27 Team Builder. PC's and Cons
 
 This isn't in the Chrome Web Store, so you load it manually. Takes about a minute.
 
-1. On this page, click the green **Code** button → **Download ZIP**.
-2. Unzip it. You'll get a folder named `teamcrafters-classic-roster-importer-main`.
-   Put it somewhere you won't delete by accident (not your Downloads folder).
+1. Download the latest release ZIP from the [Releases](../../releases) page.
+2. Unzip it into a new folder named `team-builder-unleashed-v0.7.0`.
+   Put that folder somewhere you won't delete by accident (not your Downloads folder).
 3. Open Chrome and go to `chrome://extensions`
 4. Turn on **Developer mode** (toggle, top-right).
 5. Click **Load unpacked** and select the folder you unzipped.
 6. The extension appears in your toolbar. (Click the puzzle-piece icon → pin it.)
 
-If a TeamCrafters classic-roster page or EA Team Builder was already open, reload those tabs.
+If the Studio or EA Team Builder was already open, reload those tabs.
 
 ## Use it
 
-1. Go to a TeamCrafters classic-team page (`teamcrafters.net/app/classic-rosters`), public custom
-   team page (such as `teamcrafters.net/app/customTeams/691`), or CFB 27 Team Builder directory
-   page (such as `teamcrafters.net/app/teambuilder/CFB27/[id]`).
-2. Click the blue **"Copy For Team Builder"** or **"Copy team for Team Builder"** button
-   (bottom-right).
-3. Open your team in EA College Football 27 Team Builder. Go to the "Roster" tab.
-4. On the **roster presets** dropdown, in the middle, you'll now see something like
-   **"TeamCrafters: Alabama (NCAA 13)"**. Pick it.
-5. The roster loads. Review it, then save, load up, and play on!
+1. Open the [CFB 27 Studio](https://www.teamcrafters.net/team-builder-unleashed/cfb27).
+2. Choose the roster, player, stadium, mascot, prestige, or template change you want. The Studio
+   will let you know when it is ready.
+3. Open your team in EA College Football 27 Team Builder. If you made roster or template changes
+   while it was open, refresh that Team Builder tab first.
+4. Look for the **Team Builder Unleashed** bar in the top-left. It shows what is ready for your
+   next save and lets you temporarily turn a save change off.
+5. Use EA Team Builder's regular **Save** button, then test your team in game.
 
-Click the extension's toolbar icon any time to see what's currently copied, preview it on
-TeamCrafters, or clear it. While a local team is saved, so the names persist, the auto name-generation function is disabled, you'll need to unload your team to re-enable it.
+> **Important for roster changes:** After importing a roster or changing any player appearance or
+> equipment, refresh the EA Team Builder page first. Then select a different roster template such
+> as **Spread**, and select **TeamCrafters** again. EA only reloads the staged roster after a page
+> refresh and a template change. Skipping either step means your roster changes may not show
+> correctly.
+
+Click the extension icon any time to open the Studio, read Help, or safely remove a staged change.
 
 For custom teams with an original Team Builder asset (including legacy entries that retained only
 their submission URL), the copy reads that team’s published `nonce-primary` file through the
@@ -71,29 +80,32 @@ TeamCrafters extension API and preserves its player data, portraits, and equipme
 asset reference fall back to the public roster table and use the extension's stable base appearance
 map so they remain safe to load in Team Builder.
 
-CFB 27 Team Builder directory pages use the same verified payload path, so they preserve the
-original roster, portraits, and equipment.
+Team Builder directory pages under either the current `CFB` or legacy `CFB27` URL use the same
+verified payload path, so they preserve the original roster, portraits, and equipment.
 
 ## Or copy an EA Team Builder preview
 
 1. Open a shared team at `https://www.ea.com/games/ea-sports-college-football/team-builder/preview/[teamid]`.
 2. Wait for the page to load, then use the **Copy roster for Team Builder** control at the bottom-right.
-3. Open the roster presets on any Team Builder team and select the new **TeamCrafters** preset.
+3. Open the roster presets on any Team Builder team, select a different template such as
+   **Spread**, then select the new **TeamCrafters** preset.
 
 The preview copy reads the page's `nonce-primary` response and preserves the original player map
 and `characterVisuals` map together, including each player's exact portrait and equipment. It only
-writes the clipboard after you press Copy. Use **Download CSV** beside it to save the same roster
-in the extension's import format; the CSV includes `portraitId` for every player.
+writes the clipboard after you press Copy. Then open the CFB 27 Studio to review or edit the
+roster. Use **Download CSV** beside it to save the same roster as a spreadsheet; the CSV includes
+`portraitId` for every player.
 
 ## Or build a roster from a spreadsheet
 
 You don't have to start from a TeamCrafters team — you can bring your own roster in from a CSV.
 
-1. Click the extension's toolbar icon and choose **"import a roster from a CSV"**.
-2. Click **Download sample-roster.csv**. It's a complete, valid 85-player roster with every required column filled in.
+1. Open the CFB 27 Studio and choose **Rosters**, then **Import**.
+2. Click **Download sample CSV**. It's a complete, valid 85-player roster with every required column filled in.
 3. Open it in Excel or Google Sheets, replace the players with whatever you want, and save as CSV.
-4. Back on that page, give the roster a name, pick your file, and hit **Import roster**.
-5. It shows up in Team Builder's presets exactly like a copied TeamCrafters roster.
+4. Back in the Studio, give the roster a name, choose your file, and click **Import roster**.
+5. Refresh an already-open Team Builder tab. In the preset list, select a different template such
+   as **Spread**, then select **TeamCrafters** to load the new roster.
 
 Every rating must be a number from 0–99. **`OVR` and archetype are always calculated dynamically from the player's ratings and position on import** — don't include an `OVR` column at all, a supplied value is rejected. Bio fields (height, weight, class, skin tone, `homeTown`, and `homeTownState`) can be left blank too; those fall back to the base template's values. `homeTownState` is an optional integer: 0–49 map to Alabama–Wyoming alphabetically, and 50 is Non-US. An optional `portraitId` preserves a Team Builder player's exact EA head; it takes precedence over `skinTone`, while a blank `portraitId` uses the existing skin-tone-to-portrait fallback.
 
@@ -118,30 +130,26 @@ Either way the file always downloads, and the button tells you exactly what to f
 
 ## Modify player equipment
 
-Every copied or CSV-imported roster carries its matching `character_visuals.json`. Open the
-extension and choose **Team Builder Unleashed** to edit that data on TeamCrafters before loading the
-preset in Team Builder. The web editor has the complete CFB 27 equipment catalog, searchable image
-previews, paired-side controls, and bulk actions.
+Every copied or CSV-imported roster carries its matching player details. Open the CFB 27 Studio,
+choose **Rosters**, then **Edit**, select a player, and choose **Equipment**. The web editor has the
+CFB 27 equipment catalog, searchable previews, paired-side controls, and copy-loadout actions.
 
 The page communicates with the extension through a versioned, revision-safe bridge. It receives
-only the roster and character-visual fields needed by the editor, keeps local drafts in the browser,
-and writes only `visualsJson` plus its edit timestamp after an explicit save. A stale editor cannot
-overwrite a newly copied roster, and all unrelated clipboard fields remain private to the extension.
+only the roster and player fields needed by the editor, saves supported player changes as you make
+them, and keeps all unrelated clipboard fields private to the extension. A stale editor cannot
+overwrite a newly copied roster.
 
-## Or swap in a real school's uniforms
+Before saving any equipment or player change, refresh the EA Team Builder page first. Then select
+a different roster template such as **Spread**, and select **TeamCrafters** again. The change will
+not reliably appear unless EA reloads the refreshed TeamCrafters preset.
 
-The extension bundles 1,167 CFB 27 uniforms across 150 selectable groups, pulled from the game's own files.
+## Uniforms
 
-1. Click the extension's toolbar icon and choose **"Choose team uniforms"**.
-2. Search for a school and pick it. You'll see every uniform it has, with dark/light and current-home/away marked.
-3. Click **Use these uniforms**.
-4. Open your team in Team Builder and hit **Save**. You'll be asked to confirm before anything is uploaded — nothing is changed unless you say yes.
-
-This adds that school's full set to your team. Team Builder keeps one original uniform as an
-unused technical anchor, then makes every selected school uniform available; your roster, logos,
-and stadium are untouched.
-
-The confirmation appears on every save while a team is selected. Clear it from the toolbar popup when you're done.
+Choose uniform overrides in the CFB 27 Studio's **Uniforms** tab, then save normally in Team
+Builder. Read the [uniform guide](https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/uniforms)
+before saving: an override replaces every uniform on your team with the selected real team's
+uniforms, and EA may patch this behavior at any time. The extension shows any staged override and
+lets you turn it off or remove it safely.
 
 ## Troubleshooting
 
@@ -209,13 +217,13 @@ closure-bound and effectively unreachable in the production build). It:
 | `inject.js` | **main** | Team Builder | Patches `fetch`/`XMLHttpRequest` for roster and school-template responses |
 | `ea-bridge.js` | isolated | Team Builder | Relays `chrome.storage` into the page (main-world scripts can't call `chrome.*`) |
 | `popup.html` / `popup.js` | — | — | Toolbar status popup |
-| `options.html` / `options.js` | — | — | Tabbed uniform, mascot, stadium, school-template, and CSV tools plus editor launcher |
+| `options.html` / `options.js` | — | — | TeamCrafters-branded Studio shortcuts, ready-to-save status, and safe recovery controls |
 | `equipment-web-bridge.js` | isolated | exact Team Builder Unleashed route | Versioned, revision-safe web editor bridge for the stored roster visuals |
 | `csv-import.js` | isolated | classic-roster pages | CSV parsing + mapping into the normalized roster shape; owns the column schema and roster rules |
 | `csv-export.js` | isolated | classic-roster pages | The reverse — normalized roster to CSV, reusing `csv-import.js`'s tables so the two can't drift |
-| `cfb27-position-ovr-calculator.js` | — | — | Archetype-weighted OVR calculation (options page only) |
+| `cfb27-position-ovr-calculator.js` | — | — | Archetype-weighted OVR calculation used by the Studio bridge |
 | `sample-roster.csv` | — | — | Complete 85-player sample, generated from the base template |
-| `uniform-build.js` | — | — | Converts catalog uniforms into EA's payload shape (options page only) |
+| `uniform-build.js` | — | — | Converts catalog uniforms into EA's payload shape for the save bridge |
 | `uniform-catalog.json` | — | — | 150 selectable groups / 1,167 uniforms decoded from CFB 27 |
 | `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
 | `reference/` | — | — | EA head catalog + sample team payload, reference only |
@@ -255,7 +263,7 @@ Encodings worth knowing, all confirmed against real team files:
 There are two sources for a roster, and they converge immediately:
 
 - `teamcrafters-copy.js` fetches the export API on a TeamCrafters page.
-- `csv-import.js` parses a user-supplied CSV on the options page.
+- `csv-import.js` parses a user-supplied CSV from the Team Builder Unleashed Studio.
 
 Both produce the **same normalized shape** (documented below), which is handed to `roster-merge.js`. Everything after that point — position matching, merge rules, wire encodings, storage, and serving — is identical. If you add a third source, produce that shape and you're done.
 
