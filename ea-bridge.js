@@ -70,8 +70,11 @@
     if (Array.isArray(uniform?.uniforms) && uniform.uniforms.length) {
       changes.push({ key: 'uniforms', label: `${uniform.uniforms.length} uniform${uniform.uniforms.length === 1 ? '' : 's'}`, enabled: settings.uniforms });
     }
-    if (text(mascot?.assetName)) {
-      changes.push({ key: 'mascot', label: `Mascot: ${text(mascot?.mascotName) || text(mascot?.teamName) || 'selected'}`, enabled: settings.mascot });
+    if (typeof mascot?.assetName === 'string') {
+      const mascotLabel = text(mascot.assetName)
+        ? `Mascot: ${text(mascot?.mascotName) || text(mascot?.teamName) || 'selected'}`
+        : 'Mascot: None (remove on save)';
+      changes.push({ key: 'mascot', label: mascotLabel, enabled: settings.mascot });
     }
     if (Number.isInteger(stadium?.stadiumId)) {
       changes.push({ key: 'stadium', label: `Stadium: ${text(stadium?.displayName) || 'selected'}`, enabled: settings.stadium });

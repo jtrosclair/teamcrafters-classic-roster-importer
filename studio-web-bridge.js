@@ -1073,15 +1073,21 @@
       if (patch.mascot === null) next[MASCOT_KEY] = null;
       else if (isRecord(patch.mascot)) {
         const assetName = text(patch.mascot.assetName);
-        const mascot = catalogs.mascots.find(
-          (candidate) => candidate.assetName === assetName,
-        );
-        if (!mascot)
-          throw Object.assign(
-            new Error("Choose a mascot from the Team Builder catalog."),
-            { code: "INVALID_PAYLOAD" },
+        if (assetName === "") {
+          // Keep an explicit empty value armed. It is distinct from a null
+          // patch, which merely clears the extension's pending selection.
+          next[MASCOT_KEY] = { assetName: "" };
+        } else {
+          const mascot = catalogs.mascots.find(
+            (candidate) => candidate.assetName === assetName,
           );
-        next[MASCOT_KEY] = mascot;
+          if (!mascot)
+            throw Object.assign(
+              new Error("Choose a mascot from the Team Builder catalog."),
+              { code: "INVALID_PAYLOAD" },
+            );
+          next[MASCOT_KEY] = mascot;
+        }
       } else
         throw Object.assign(new Error("The mascot selection is invalid."), {
           code: "INVALID_PAYLOAD",

@@ -67,10 +67,17 @@
         href: 'https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/uniforms', label: 'View guide',
       }));
     }
-    if (text(mascot?.assetName)) {
-      rows.push(makeRow('Mascot ready', text(mascot.mascotName) || text(mascot.teamName) || 'Selected mascot', true, {
+    if (typeof mascot?.assetName === 'string') {
+      rows.push(makeRow(
+        text(mascot.assetName) ? 'Mascot ready' : 'Mascot removal ready',
+        text(mascot.assetName)
+          ? text(mascot.mascotName) || text(mascot.teamName) || 'Selected mascot'
+          : 'No mascot will be saved for your next team',
+        true,
+        {
         href: 'https://www.teamcrafters.net/team-builder-unleashed/cfb27', label: 'Open studio',
-      }));
+        },
+      ));
     }
     if (Number.isInteger(stadium?.stadiumId)) {
       rows.push(makeRow('Stadium ready', text(stadium.displayName) || 'Selected stadium', true, {

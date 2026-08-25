@@ -1029,7 +1029,6 @@
 
   function applyArmedMascot(originalText, mascot) {
     const assetName = typeof mascot?.assetName === 'string' ? mascot.assetName.trim() : '';
-    if (!assetName) throw new Error('The armed mascot has no asset name.');
 
     const payload = JSON.parse(originalText);
     const teamInfos = payload?.teamData?.teamInfos;
@@ -1174,7 +1173,9 @@
       getUnleashedSaveSettings(),
     ]);
     const uniformArmed = settings.uniforms !== false && armed && Array.isArray(armed.uniforms) && armed.uniforms.length;
-    const mascotArmed = settings.mascot !== false && typeof mascot?.assetName === 'string' && mascot.assetName.trim();
+    // An empty asset name is the explicit “None / Remove mascot” choice.
+    // It must remain armed so the native save receives a blank mascot ID.
+    const mascotArmed = settings.mascot !== false && typeof mascot?.assetName === 'string';
     const stadiumArmed = settings.stadium !== false && Number.isInteger(stadium?.stadiumId);
     if (!uniformArmed && !mascotArmed && !stadiumArmed) {
       return null;

@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## v0.7.1 — 2026-08-25
+
+### Fixes
+
+- Add a **None / Remove mascot** choice in the Studio. It stays armed through the
+  normal Team Builder save and writes a blank mascot ID, instead of silently
+  leaving the team's existing mascot in place.
 
 ## v0.7.0 — 2026-08-23
 

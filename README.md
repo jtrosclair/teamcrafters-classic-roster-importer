@@ -46,7 +46,7 @@ teams they create, as long as they can access Team Builder from a computer runni
 This isn't in the Chrome Web Store, so you load it manually. Takes about a minute.
 
 1. Download the latest release ZIP from the [Releases](../../releases) page.
-2. Unzip it into a new folder named `team-builder-unleashed-v0.7.0`.
+2. Unzip it into a new folder named `team-builder-unleashed-v0.7.1`.
    Put that folder somewhere you won't delete by accident (not your Downloads folder).
 3. Open Chrome and go to `chrome://extensions`
 4. Turn on **Developer mode** (toggle, top-right).
