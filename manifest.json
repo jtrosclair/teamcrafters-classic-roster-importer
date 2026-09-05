@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Team Builder Unleashed",
   "short_name": "TBU",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "author": "TeamCrafters",
   "description": "Team Builder Unleashed by TeamCrafters connects the web studio to EA Sports College Football 27 Team Builder.",
   "icons": {

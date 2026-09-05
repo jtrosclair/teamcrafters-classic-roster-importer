@@ -481,3 +481,33 @@ assert.equal(
 );
 
 console.log("studio web bridge player appearance and cleat tests passed");
+
+// Use the real bridge to add, change, and remove every V2 slot while preserving
+// body loadouts, other players, and unknown slot 97 from older saved rosters.
+assert.ok(ready.payload.capabilities.includes("player.equipment.catalog.v2"));
+const v2Clipboard = clipboard();
+const v2Visuals = JSON.parse(v2Clipboard.visualsJson);
+v2Visuals[100].loadouts[0].loadoutElements.push({slotType:97,itemAssetName:"PreservedUnknownSlot"});
+v2Clipboard.visualsJson = JSON.stringify(v2Visuals);
+const v2 = harness(v2Clipboard);
+for (const slotType of [95,96,128,135,140]) {
+  for (const action of ['add','change','remove']) {
+    const request = `v2-${slotType}-${action}`;
+    v2.dispatch('TC_STUDIO_GET_WORKSPACE',{},request+'-read');
+    const current = await v2.waitFor('TC_STUDIO_WORKSPACE',request+'-read');
+    const before = JSON.parse(v2.clipboard.visualsJson);
+    const loadouts = clone(before[100].loadouts);
+    const gear = loadouts[0].loadoutElements;
+    const index = gear.findIndex(e=>e.slotType===slotType);
+    if(action==='add') gear.push({slotType,itemAssetName:`V2_${slotType}`});
+    if(action==='change') gear[index].itemAssetName += '_Changed';
+    if(action==='remove') gear.splice(index,1);
+    v2.dispatch('TC_STUDIO_SAVE_PLAYER_EQUIPMENT',{expectedRevision:current.payload.revision,patch:{playerId:'100',loadouts}},request);
+    await v2.waitFor('TC_STUDIO_WORKSPACE',request);
+    const after = JSON.parse(v2.clipboard.visualsJson);
+    assert.deepEqual(after[100].loadouts,loadouts);
+    assert.deepEqual(after[101],before[101]);
+    assert.equal(after[100].loadouts[0].loadoutElements.find(e=>e.slotType===97).itemAssetName,'PreservedUnknownSlot');
+  }
+}
+console.log('V2 equipment add/change/remove and protected field tests passed');

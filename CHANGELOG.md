@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.2 — 2026-09-04
+
+- Support the expanded CFB 27 equipment catalog, including balaclavas, guardian caps, and turtlenecks.
+- Correct left/right cleat color override slots and preserve unrelated player settings.
+- Advertise V2 equipment support so the Studio can explain when an extension update is needed.
+
+Refresh Team Builder and the Studio after reloading the updated extension. Choose another roster preset, then TeamCrafters, before saving in EA Team Builder.
+
 ## v0.7.1 — 2026-08-25
 
 ### Fixes

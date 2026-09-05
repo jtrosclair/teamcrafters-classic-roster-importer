@@ -46,9 +46,9 @@
 
   // Slots exposed by the v1 web editor. Hidden calf placeholders 112/113 and body type are deliberately absent.
   const EDITABLE_SLOT_IDS = new Set([
-    0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 96, 97, 101,
+    0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 95, 96, 101,
     106, 107, 108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122,
-    124, 125, 127, 142, 143,
+    124, 125, 127, 128, 135, 140, 142, 143,
   ]);
 
   const suppressedChangeRevisions = new Set();

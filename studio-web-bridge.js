@@ -29,9 +29,9 @@
   const UNIFORM_KEY = "tcUniformClipboard";
   const SCHOOL_TEMPLATE_KEY = "tcSchoolTemplates";
   const EQUIPMENT_SLOT_IDS = new Set([
-    0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 96, 97, 101, 106, 107,
+    0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 95, 96, 101, 106, 107,
     108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122, 124, 125, 127,
-    129, 142, 143,
+    128, 129, 135, 140, 142, 143,
   ]);
   const BODY_TYPE_SLOT_ID = 129;
   const LEFT_CLEAT_SLOT_ID = 10;
@@ -1187,6 +1187,7 @@
           "player.appearance.bodyType.write",
           "player.equipment.read",
           "player.equipment.write",
+          "player.equipment.catalog.v2",
         ],
       });
       return;
