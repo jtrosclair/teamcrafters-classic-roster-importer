@@ -23,6 +23,7 @@
   const STADIUM_KEY = 'tcStadiumClipboard';
   const SCHOOL_TEMPLATE_KEY = 'tcSchoolTemplates';
   const SAVE_SETTINGS_KEY = 'tcUnleashedSaveSettings';
+  const UNIFORM_IMPORT_ENABLED = false;
   const MAX_JSON_BYTES = 5 * 1024 * 1024;
   const RELAYS = [
     { key: ROSTER_KEY, request: 'tc-roster-clipboard-request', response: 'tc-roster-clipboard-response' },
@@ -67,7 +68,7 @@
     const mascot = stored[MASCOT_KEY];
     const stadium = stored[STADIUM_KEY];
     const changes = [];
-    if (Array.isArray(uniform?.uniforms) && uniform.uniforms.length) {
+    if (UNIFORM_IMPORT_ENABLED && Array.isArray(uniform?.uniforms) && uniform.uniforms.length) {
       changes.push({ key: 'uniforms', label: `${uniform.uniforms.length} uniform${uniform.uniforms.length === 1 ? '' : 's'}`, enabled: settings.uniforms });
     }
     if (typeof mascot?.assetName === 'string') {

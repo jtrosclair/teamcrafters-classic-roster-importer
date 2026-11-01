@@ -129,6 +129,14 @@
 
   const AUTO_CONTINUE_SECONDS = 20;
 
+  // EA patched the private path that allowed more than five custom uniforms. Keep the old
+  // implementation behind a switch so it can be retested later without running any of its
+  // Angular component hooks in the meantime.
+  const EXTRA_UNIFORM_SLOT_CREATION_ENABLED = false;
+  // Stock-uniform importing is also paused. Keep the transformation code dormant so an existing
+  // stored selection cannot change an EA save while the workaround is being rebuilt.
+  const UNIFORM_IMPORT_ENABLED = false;
+  const NATIVE_UNIFORM_LIMIT = 5;
   const configuredUniformLimit = window.TeamCraftersUniformConfig?.maxUniforms;
   const MAX_UNIFORMS =
     Number.isInteger(configuredUniformLimit) && configuredUniformLimit > 0
@@ -178,29 +186,31 @@
     });
   }
 
-  try {
-    captureComponentField('teamBuilderService');
-    captureComponentField('isBottomPopup');
-  } catch {
-    // The regular captured native listener remains available on browsers that prevent this hook.
-  }
-
-  try {
-    const nativeDefineProperty = Object.defineProperty;
-    if (!nativeDefineProperty.__teamcraftersUniformComponentCapture) {
-      const wrappedDefineProperty = function (target, property, descriptor) {
-        if (property === 'teamBuilderService' && descriptor && 'value' in descriptor) {
-          trackUniformSelectionCandidate(target);
-        }
-        return nativeDefineProperty.call(Object, target, property, descriptor);
-      };
-      Object.defineProperty(wrappedDefineProperty, '__teamcraftersUniformComponentCapture', {
-        value: true,
-      });
-      Object.defineProperty = wrappedDefineProperty;
+  if (EXTRA_UNIFORM_SLOT_CREATION_ENABLED) {
+    try {
+      captureComponentField('teamBuilderService');
+      captureComponentField('isBottomPopup');
+    } catch {
+      // The regular captured native listener remains available on browsers that prevent this hook.
     }
-  } catch {
-    // The assignment capture above covers the normal Angular output.
+
+    try {
+      const nativeDefineProperty = Object.defineProperty;
+      if (!nativeDefineProperty.__teamcraftersUniformComponentCapture) {
+        const wrappedDefineProperty = function (target, property, descriptor) {
+          if (property === 'teamBuilderService' && descriptor && 'value' in descriptor) {
+            trackUniformSelectionCandidate(target);
+          }
+          return nativeDefineProperty.call(Object, target, property, descriptor);
+        };
+        Object.defineProperty(wrappedDefineProperty, '__teamcraftersUniformComponentCapture', {
+          value: true,
+        });
+        Object.defineProperty = wrappedDefineProperty;
+      }
+    } catch {
+      // The assignment capture above covers the normal Angular output.
+    }
   }
 
   function getUniformSelectionComponent() {
@@ -229,8 +239,10 @@
     const loadOutOptions = uniformDataService?.getLoadOutOptions?.();
     if (Array.isArray(loadOutOptions)) return loadOutOptions.length;
     if (Array.isArray(component?.uniforms)) return component.uniforms.length;
-    return document.querySelectorAll(
-      'app-uniforms-selection .uniform-item:not([data-teamcrafters-create-uniform])'
+    return Array.from(document.querySelectorAll('app-uniforms-selection .uniform-item')).filter(
+      (tile) =>
+        !tile.hasAttribute(TEAMCRAFTERS_CREATE_TILE) &&
+        !tile.querySelector('button[aria-label="Create new team"]')
     ).length;
   }
 
@@ -253,7 +265,134 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
+  function showExtraUniformSlotsPatchedDialog() {
+    if (document.querySelector(`[${TEAMCRAFTERS_CREATE_DIALOG}]`)) return;
+
+    const previouslyFocused = document.activeElement;
+    const overlay = document.createElement('div');
+    overlay.setAttribute(TEAMCRAFTERS_CREATE_DIALOG, '');
+    overlay.setAttribute('role', 'presentation');
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483647',
+      display: 'grid',
+      placeItems: 'center',
+      padding: '24px',
+      background: 'rgba(0, 0, 0, 0.78)',
+    });
+
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'teamcrafters-uniform-patched-title');
+    dialog.setAttribute('aria-describedby', 'teamcrafters-uniform-patched-quote');
+    Object.assign(dialog.style, {
+      boxSizing: 'border-box',
+      width: 'min(100%, 460px)',
+      padding: '30px',
+      border: '1px solid rgba(255, 255, 255, 0.22)',
+      borderTop: '3px solid #ffde00',
+      borderRadius: '8px',
+      color: '#fff',
+      background: '#1c1c1c',
+      boxShadow: '0 24px 72px rgba(0, 0, 0, 0.62)',
+      fontFamily: 'inherit',
+    });
+
+    const eyebrow = document.createElement('div');
+    eyebrow.textContent = 'UNIFORM LIMIT REACHED';
+    Object.assign(eyebrow.style, {
+      marginBottom: '10px',
+      color: '#ffde00',
+      fontSize: '11px',
+      fontWeight: '700',
+      letterSpacing: '0.12em',
+    });
+
+    const title = document.createElement('h2');
+    title.id = 'teamcrafters-uniform-patched-title';
+    title.textContent = 'EA patched extra uniforms, it’s over guys 💀';
+    Object.assign(title.style, {
+      margin: '0',
+      fontSize: '24px',
+      lineHeight: '1.25',
+    });
+
+    const quote = document.createElement('blockquote');
+    quote.id = 'teamcrafters-uniform-patched-quote';
+    quote.textContent = '“Don\'t cry because it\'s over, smile because it happened”';
+    Object.assign(quote.style, {
+      margin: '22px 0 0',
+      padding: '16px 18px',
+      borderLeft: '3px solid #ffde00',
+      color: '#d9d9d9',
+      background: '#292929',
+      fontSize: '16px',
+      fontStyle: 'italic',
+      lineHeight: '1.55',
+    });
+
+    const actions = document.createElement('div');
+    Object.assign(actions.style, {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      marginTop: '24px',
+    });
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.textContent = 'Close';
+    Object.assign(close.style, {
+      minHeight: '42px',
+      padding: '0 20px',
+      border: '0',
+      borderRadius: '4px',
+      color: '#111',
+      background: '#ffde00',
+      font: '600 14px inherit',
+      cursor: 'pointer',
+    });
+
+    const dismiss = () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      overlay.remove();
+      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      }
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        dismiss();
+        return;
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        event.stopPropagation();
+        close.focus();
+      }
+    };
+
+    close.addEventListener('click', dismiss);
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) dismiss();
+    });
+    document.addEventListener('keydown', onKeyDown, true);
+    actions.appendChild(close);
+    dialog.append(eyebrow, title, quote, actions);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    queueMicrotask(() => close.focus());
+  }
+
   function requestFallbackUniformCreate() {
+    if (!EXTRA_UNIFORM_SLOT_CREATION_ENABLED) {
+      if (getUniformCount() < NATIVE_UNIFORM_LIMIT) return;
+      showExtraUniformSlotsPatchedDialog();
+      return;
+    }
     if (document.querySelector(`[${TEAMCRAFTERS_CREATE_DIALOG}]`)) return;
     if (getUniformCount() >= MAX_UNIFORMS) return;
 
@@ -420,6 +559,7 @@
     button.type = 'button';
     button.className = 'tab-button relative';
     button.setAttribute('aria-label', 'Create new uniform');
+    button.setAttribute('aria-haspopup', 'dialog');
     const icon = document.createElement('span');
     icon.className = 'eaicon eaiconadd c-text-4';
     button.appendChild(icon);
@@ -430,12 +570,32 @@
   }
 
   function syncUnlimitedUniformCreateControl() {
-    ensureUniformListScrollStyles();
     const nativeButton = document.querySelector(UNIFORM_CREATE_BUTTON_SELECTOR);
     const replacement = document.querySelector(`[${TEAMCRAFTERS_CREATE_TILE}]`);
     const nativeTile = nativeButton?.closest('.uniform-item');
+    const uniformCount = getUniformCount();
 
-    if (getUniformCount() >= MAX_UNIFORMS) {
+    if (!EXTRA_UNIFORM_SLOT_CREATION_ENABLED) {
+      if (uniformCount < NATIVE_UNIFORM_LIMIT) {
+        nativeTile?.style.removeProperty('display');
+        replacement?.remove();
+        return;
+      }
+
+      // Leave a notice-only add tile anywhere a sixth-or-later uniform could be attempted.
+      // Hiding a native tile here also prevents EA from receiving a patched creation request.
+      ensureUniformListScrollStyles();
+      nativeTile?.style.setProperty('display', 'none', 'important');
+      if (replacement) return;
+
+      const uniformList = document.querySelector(UNIFORM_ROW_SELECTOR);
+      if (!uniformList) return;
+      uniformList.insertBefore(makeUniformCreateTile(), uniformList.firstChild);
+      return;
+    }
+
+    ensureUniformListScrollStyles();
+    if (uniformCount >= MAX_UNIFORMS) {
       replacement?.remove();
       nativeTile?.style.setProperty('display', 'none', 'important');
       return;
@@ -1167,12 +1327,12 @@
   // the original request unchanged when neither uniforms, a mascot, nor a stadium are selected.
   async function chooseSaveUploadText(originalBody) {
     const [armed, mascot, stadium, settings] = await Promise.all([
-      getArmedUniforms(),
+      UNIFORM_IMPORT_ENABLED ? getArmedUniforms() : Promise.resolve(null),
       getArmedMascot(),
       getArmedStadium(),
       getUnleashedSaveSettings(),
     ]);
-    const uniformArmed = settings.uniforms !== false && armed && Array.isArray(armed.uniforms) && armed.uniforms.length;
+    const uniformArmed = UNIFORM_IMPORT_ENABLED && settings.uniforms !== false && armed && Array.isArray(armed.uniforms) && armed.uniforms.length;
     // An empty asset name is the explicit “None / Remove mascot” choice.
     // It must remain armed so the native save receives a blank mascot ID.
     const mascotArmed = settings.mascot !== false && typeof mascot?.assetName === 'string';

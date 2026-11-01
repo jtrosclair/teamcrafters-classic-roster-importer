@@ -5,6 +5,7 @@
 // shortcuts, a plain-language connection status, and safe recovery controls for
 // changes that were already staged in the extension.
 (function () {
+  const UNIFORM_IMPORT_ENABLED = false;
   const KEYS = {
     roster: 'tcRosterClipboard',
     uniforms: 'tcUniformClipboard',
@@ -62,7 +63,7 @@
         href: 'https://www.teamcrafters.net/team-builder-unleashed/cfb27', label: 'Open studio',
       }));
     }
-    if (Array.isArray(uniforms?.uniforms) && uniforms.uniforms.length) {
+    if (UNIFORM_IMPORT_ENABLED && Array.isArray(uniforms?.uniforms) && uniforms.uniforms.length) {
       rows.push(makeRow('Uniforms ready', `${uniforms.uniforms.length} selected for your next save`, true, {
         href: 'https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/uniforms', label: 'View guide',
       }));

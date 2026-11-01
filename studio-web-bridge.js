@@ -28,6 +28,7 @@
   const STADIUM_KEY = "tcStadiumClipboard";
   const UNIFORM_KEY = "tcUniformClipboard";
   const SCHOOL_TEMPLATE_KEY = "tcSchoolTemplates";
+  const UNIFORM_IMPORT_ENABLED = false;
   const EQUIPMENT_SLOT_IDS = new Set([
     0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 95, 96, 101, 106, 107,
     108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122, 124, 125, 127,
@@ -1169,26 +1170,27 @@
       return;
 
     if (message.type === "TC_STUDIO_HELLO") {
+      const capabilities = [
+        "workspace.read",
+        "workspace.subscribe",
+        "workspace.import",
+        "identity.read",
+        "identity.write",
+        "identity.revision",
+        "schoolTemplates.read",
+        "schoolTemplates.write",
+        "player.appearance.read",
+        "player.appearance.write",
+        "player.appearance.bodyType.write",
+        "player.equipment.read",
+        "player.equipment.write",
+        "player.equipment.catalog.v2",
+      ];
+      if (UNIFORM_IMPORT_ENABLED) capabilities.push("uniforms.override");
       post("TC_STUDIO_READY", {
         extensionVersion: chrome.runtime.getManifest().version,
         supportedGames: ["CFB27"],
-        capabilities: [
-          "workspace.read",
-          "workspace.subscribe",
-          "workspace.import",
-          "identity.read",
-          "identity.write",
-          "identity.revision",
-          "uniforms.override",
-          "schoolTemplates.read",
-          "schoolTemplates.write",
-          "player.appearance.read",
-          "player.appearance.write",
-          "player.appearance.bodyType.write",
-          "player.equipment.read",
-          "player.equipment.write",
-          "player.equipment.catalog.v2",
-        ],
+        capabilities,
       });
       return;
     }
@@ -1224,21 +1226,35 @@
                     post("TC_STUDIO_WRITE_RESULT", payload, message.requestId),
                   )
                 : message.type === "TC_STUDIO_GET_UNIFORM_OVERRIDE"
-                  ? getUniformOverride().then((payload) =>
-                      post(
-                        "TC_STUDIO_UNIFORM_OVERRIDE",
-                        payload,
-                        message.requestId,
-                      ),
-                    )
-                  : message.type === "TC_STUDIO_SAVE_UNIFORM_OVERRIDE"
-                    ? saveUniformOverride(message.payload).then((payload) =>
+                  ? UNIFORM_IMPORT_ENABLED
+                    ? getUniformOverride().then((payload) =>
                         post(
                           "TC_STUDIO_UNIFORM_OVERRIDE",
                           payload,
                           message.requestId,
                         ),
                       )
+                    : Promise.reject(
+                        Object.assign(
+                          new Error("Uniform importing is temporarily unavailable."),
+                          { code: "FEATURE_UNAVAILABLE" },
+                        ),
+                      )
+                  : message.type === "TC_STUDIO_SAVE_UNIFORM_OVERRIDE"
+                    ? UNIFORM_IMPORT_ENABLED
+                      ? saveUniformOverride(message.payload).then((payload) =>
+                          post(
+                            "TC_STUDIO_UNIFORM_OVERRIDE",
+                            payload,
+                            message.requestId,
+                          ),
+                        )
+                      : Promise.reject(
+                          Object.assign(
+                            new Error("Uniform importing is temporarily unavailable."),
+                            { code: "FEATURE_UNAVAILABLE" },
+                          ),
+                        )
                 : message.type === "TC_STUDIO_GET_SCHOOL_TEMPLATES"
                   ? getSchoolTemplates().then((payload) =>
                       post(

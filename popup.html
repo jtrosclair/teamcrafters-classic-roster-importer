@@ -67,15 +67,10 @@
       font-size: 11.5px;
       line-height: 1.35;
     }
-    .update-card[data-status="update-available"] { border-color: #31598e; border-left: 3px solid #60a5fa; background: #17243a; }
     .update-heading { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
     .update-card strong { color: #f7f9fc; }
     .update-label { color: #aab5c4; font-size: 10.5px; font-weight: 700; }
-    .update-card[data-status="update-available"] .update-label { color: #bfdbfe; }
     .update-card p { margin: 4px 0 0; }
-    .update-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-    .update-card a { display: inline-flex; align-items: center; color: #93c5fd; font-size: 11px; font-weight: 700; text-decoration: none; }
-    .update-card button { min-height: 28px; padding: 5px 8px; font-size: 11px; }
     footer { padding: 11px 16px 14px; border-top: 1px solid #263142; color: #7f8da1; font-size: 10.5px; line-height: 1.45; }
     footer a { color: #93c5fd; font-weight: 700; text-decoration: none; }
   </style>
@@ -101,20 +96,15 @@
         <button id="clearSaveChangesBtn" type="button" hidden>Remove stadium, mascot, and uniforms</button>
       </div>
     </details>
-    <section id="updateStatus" class="update-card" aria-live="polite" data-status="checking">
-      <div class="update-heading"><strong>Updates</strong><span id="updateLabel" class="update-label">Checking…</span></div>
-      <p id="updateText">Looking for the latest public release.</p>
-      <div class="update-actions">
-        <a id="updateLink" href="#" target="_blank" rel="noopener" hidden>View release</a>
-        <button id="checkUpdateBtn" type="button">Check now</button>
-      </div>
+    <section class="update-card">
+      <div class="update-heading"><strong>Updates</strong><span id="installedVersion" class="update-label"></span></div>
+      <p>Chrome automatically updates extensions installed from the Chrome Web Store.</p>
     </section>
   </main>
   <footer>
     Built by TeamCrafters. <a href="https://discord.gg/nNBwRh4Rj5" target="_blank" rel="noopener">Get help in Discord</a><br>
     Not affiliated with or endorsed by EA. Your team is only saved when you use EA's Save button.
   </footer>
-  <script src="update-checker.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

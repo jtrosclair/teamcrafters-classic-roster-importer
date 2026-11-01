@@ -301,6 +301,57 @@ async function run() {
   assert.equal(hiddenRemoval.payload.code, 'INVALID_PAYLOAD');
   assert.match(hiddenRemoval.payload.message, /hidden or incompatible equipment slot/i);
 
+  const expandedHarness = createHarness(fixtureClipboard());
+  expandedHarness.dispatch(expandedHarness.envelope('TC_UNLEASHED_GET_CLIPBOARD', {}, 'expanded-read'));
+  const expandedRead = await expandedHarness.waitFor('TC_UNLEASHED_CLIPBOARD', 'expanded-read');
+  const expandedVisuals = JSON.parse(expandedRead.payload.clipboard.visualsJson);
+  const newEquipment = [
+    [95, 'U_GENERIC_SHOESX_BLAPRI'],
+    [96, 'U_GENERIC_SHOESX_BLAPRI'],
+    [128, 'FaceGear_BalaclavaOverNose'],
+    [135, 'GuardianCap_GuardianXT2'],
+    [140, 'NeckWear_Turtleneck_Scrunched_Black'],
+  ];
+  expandedVisuals['100'].loadouts[0].loadoutElements.push(
+    ...newEquipment.map(([slotType, itemAssetName]) => ({ slotType, itemAssetName })),
+  );
+  expandedHarness.dispatch(expandedHarness.envelope('TC_UNLEASHED_PUT_CLIPBOARD', {
+    expectedRevision: expandedRead.payload.revision,
+    patch: {
+      visualsJson: JSON.stringify(expandedVisuals),
+      equipmentEditedAt: '2026-11-01T12:00:00.000Z',
+    },
+  }, 'expanded-save'));
+  const expandedWrite = await expandedHarness.waitFor('TC_UNLEASHED_WRITE_RESULT', 'expanded-save');
+  const savedElements = JSON.parse(expandedHarness.clipboard.visualsJson)['100'].loadouts[0].loadoutElements;
+  for (const [slotType, itemAssetName] of newEquipment) {
+    assert.equal(savedElements.find((element) => element.slotType === slotType)?.itemAssetName, itemAssetName);
+  }
+
+  expandedVisuals['100'].loadouts[0].loadoutElements = expandedVisuals['100'].loadouts[0].loadoutElements.filter(
+    (element) => !newEquipment.some(([slotType]) => slotType === element.slotType),
+  );
+  expandedHarness.dispatch(expandedHarness.envelope('TC_UNLEASHED_PUT_CLIPBOARD', {
+    expectedRevision: expandedWrite.payload.revision,
+    patch: {
+      visualsJson: JSON.stringify(expandedVisuals),
+      equipmentEditedAt: '2026-11-01T12:01:00.000Z',
+    },
+  }, 'expanded-clear'));
+  const expandedClear = await expandedHarness.waitFor('TC_UNLEASHED_WRITE_RESULT', 'expanded-clear');
+  assert.equal(JSON.parse(expandedHarness.clipboard.visualsJson)['100'].loadouts[0].loadoutElements.length, 1);
+
+  expandedVisuals['100'].loadouts[0].loadoutElements.push({ slotType: 97, itemAssetName: 'RetiredOverride' });
+  expandedHarness.dispatch(expandedHarness.envelope('TC_UNLEASHED_PUT_CLIPBOARD', {
+    expectedRevision: expandedClear.payload.revision,
+    patch: {
+      visualsJson: JSON.stringify(expandedVisuals),
+      equipmentEditedAt: '2026-11-01T12:02:00.000Z',
+    },
+  }, 'retired-slot'));
+  const retiredSlotError = await expandedHarness.waitFor('TC_UNLEASHED_ERROR', 'retired-slot');
+  assert.equal(retiredSlotError.payload.code, 'INVALID_PAYLOAD');
+
   const beforeWrongOrigin = harness.posted.length;
   harness.dispatch(harness.envelope('TC_UNLEASHED_GET_CLIPBOARD', {}, 'wrong-origin'), {
     origin: 'https://evil.example',
@@ -344,12 +395,6 @@ async function run() {
     'https://www.teamcrafters.net/cfb27/team-builder-unleashed/',
     'https://www.teamcrafters.net/team-builder-unleashed/cfb27',
     'https://www.teamcrafters.net/team-builder-unleashed/cfb27/',
-    'http://localhost/cfb27/team-builder-unleashed',
-    'http://localhost/cfb27/team-builder-unleashed/',
-    'http://localhost:3000/team-builder-unleashed/cfb27',
-    'http://localhost:3000/team-builder-unleashed/cfb27/',
-    'http://localhost:3001/team-builder-unleashed/cfb27',
-    'http://localhost:3001/team-builder-unleashed/cfb27/',
   ]);
 
   console.log('equipment web bridge tests passed');

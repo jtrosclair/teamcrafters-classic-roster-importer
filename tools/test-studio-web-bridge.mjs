@@ -257,36 +257,37 @@ assert.ok(
   "the studio advertises body-type appearance support",
 );
 assert.ok(
-  ready.payload.capabilities.includes("uniforms.override"),
-  "the studio advertises uniform override support",
+  ready.payload.capabilities.includes("player.equipment.catalog.v2"),
+  "the studio advertises the expanded equipment slots",
+);
+assert.ok(
+  !ready.payload.capabilities.includes("uniforms.override"),
+  "the studio does not advertise paused uniform importing",
 );
 
 test.dispatch("TC_STUDIO_GET_UNIFORM_OVERRIDE", {}, "uniform-read");
-const uniforms = await test.waitFor("TC_STUDIO_UNIFORM_OVERRIDE", "uniform-read");
-assert.equal(uniforms.payload.selection, null);
+const uniformReadError = await test.waitFor("TC_STUDIO_ERROR", "uniform-read");
 assert.equal(
-  uniforms.payload.catalog,
-  undefined,
-  "the web catalog is loaded from R2 rather than the extension",
+  uniformReadError.payload.code,
+  "FEATURE_UNAVAILABLE",
+  "paused uniform selections cannot be read through an older studio client",
 );
 
 test.dispatch(
   "TC_STUDIO_SAVE_UNIFORM_OVERRIDE",
   {
-    expectedRevision: uniforms.payload.revision,
+    expectedRevision: "paused-feature",
     teamName: "Bridge University",
   },
   "uniform-save",
 );
-const savedUniforms = await test.waitFor(
-  "TC_STUDIO_UNIFORM_OVERRIDE",
-  "uniform-save",
+const uniformSaveError = await test.waitFor("TC_STUDIO_ERROR", "uniform-save");
+assert.equal(
+  uniformSaveError.payload.code,
+  "FEATURE_UNAVAILABLE",
+  "paused uniform selections cannot be saved through an older studio client",
 );
-assert.deepEqual(savedUniforms.payload.selection, {
-  teamName: "Bridge University",
-  uniformCount: 2,
-});
-assert.equal(test.uniformOverride.teamName, "Bridge University");
+assert.equal(test.uniformOverride, undefined);
 
 test.dispatch("TC_STUDIO_GET_WORKSPACE", {}, "workspace");
 const workspace = await test.waitFor("TC_STUDIO_WORKSPACE", "workspace");
@@ -418,6 +419,53 @@ const rejected = await test.waitFor("TC_STUDIO_ERROR", "equipment");
 assert.equal(rejected.payload.code, "INVALID_PAYLOAD");
 assert.match(rejected.payload.message, /Appearance, not Equipment/);
 
+const expanded = harness(clipboard());
+expanded.dispatch("TC_STUDIO_GET_WORKSPACE", {}, "expanded-read");
+const expandedWorkspace = await expanded.waitFor("TC_STUDIO_WORKSPACE", "expanded-read");
+const expandedLoadouts = JSON.parse(expanded.clipboard.visualsJson)["100"].loadouts;
+const expandedGear = expandedLoadouts.find((loadout) => loadout.loadoutCategory === 0);
+const newEquipment = [
+  [95, "U_GENERIC_SHOESX_BLAPRI"],
+  [96, "U_GENERIC_SHOESX_BLAPRI"],
+  [128, "FaceGear_BalaclavaOverNose"],
+  [135, "GuardianCap_GuardianXT2"],
+  [140, "NeckWear_Turtleneck_Scrunched_Black"],
+];
+expandedGear.loadoutElements.push(
+  ...newEquipment.map(([slotType, itemAssetName]) => ({ slotType, itemAssetName })),
+);
+expanded.dispatch("TC_STUDIO_SAVE_PLAYER_EQUIPMENT", {
+  expectedRevision: expandedWorkspace.payload.revision,
+  patch: { playerId: "100", loadouts: expandedLoadouts },
+}, "expanded-save");
+const expandedSaved = await expanded.waitFor("TC_STUDIO_WORKSPACE", "expanded-save");
+const savedGear = JSON.parse(expanded.clipboard.visualsJson)["100"].loadouts[0].loadoutElements;
+for (const [slotType, itemAssetName] of newEquipment) {
+  assert.equal(savedGear.find((element) => element.slotType === slotType)?.itemAssetName, itemAssetName);
+}
+
+const clearedLoadouts = JSON.parse(expanded.clipboard.visualsJson)["100"].loadouts;
+clearedLoadouts[0].loadoutElements = clearedLoadouts[0].loadoutElements.filter(
+  (element) => !newEquipment.some(([slotType]) => slotType === element.slotType),
+);
+expanded.dispatch("TC_STUDIO_SAVE_PLAYER_EQUIPMENT", {
+  expectedRevision: expandedSaved.payload.revision,
+  patch: { playerId: "100", loadouts: clearedLoadouts },
+}, "expanded-clear");
+const expandedCleared = await expanded.waitFor("TC_STUDIO_WORKSPACE", "expanded-clear");
+assert.deepEqual(
+  JSON.parse(expanded.clipboard.visualsJson)["100"].loadouts[0].loadoutElements,
+  [{ slotType: 106, itemAssetName: "GearHelmet_Speed_Flex" }],
+);
+
+clearedLoadouts[0].loadoutElements.push({ slotType: 97, itemAssetName: "RetiredOverride" });
+expanded.dispatch("TC_STUDIO_SAVE_PLAYER_EQUIPMENT", {
+  expectedRevision: expandedCleared.payload.revision,
+  patch: { playerId: "100", loadouts: clearedLoadouts },
+}, "retired-slot");
+const retiredSlotError = await expanded.waitFor("TC_STUDIO_ERROR", "retired-slot");
+assert.equal(retiredSlotError.payload.code, "INVALID_PAYLOAD");
+
 const productionPayload = JSON.parse(
   fs.readFileSync(new URL("../test-5-uniforms.json", import.meta.url), "utf8"),
 );
@@ -481,33 +529,3 @@ assert.equal(
 );
 
 console.log("studio web bridge player appearance and cleat tests passed");
-
-// Use the real bridge to add, change, and remove every V2 slot while preserving
-// body loadouts, other players, and unknown slot 97 from older saved rosters.
-assert.ok(ready.payload.capabilities.includes("player.equipment.catalog.v2"));
-const v2Clipboard = clipboard();
-const v2Visuals = JSON.parse(v2Clipboard.visualsJson);
-v2Visuals[100].loadouts[0].loadoutElements.push({slotType:97,itemAssetName:"PreservedUnknownSlot"});
-v2Clipboard.visualsJson = JSON.stringify(v2Visuals);
-const v2 = harness(v2Clipboard);
-for (const slotType of [95,96,128,135,140]) {
-  for (const action of ['add','change','remove']) {
-    const request = `v2-${slotType}-${action}`;
-    v2.dispatch('TC_STUDIO_GET_WORKSPACE',{},request+'-read');
-    const current = await v2.waitFor('TC_STUDIO_WORKSPACE',request+'-read');
-    const before = JSON.parse(v2.clipboard.visualsJson);
-    const loadouts = clone(before[100].loadouts);
-    const gear = loadouts[0].loadoutElements;
-    const index = gear.findIndex(e=>e.slotType===slotType);
-    if(action==='add') gear.push({slotType,itemAssetName:`V2_${slotType}`});
-    if(action==='change') gear[index].itemAssetName += '_Changed';
-    if(action==='remove') gear.splice(index,1);
-    v2.dispatch('TC_STUDIO_SAVE_PLAYER_EQUIPMENT',{expectedRevision:current.payload.revision,patch:{playerId:'100',loadouts}},request);
-    await v2.waitFor('TC_STUDIO_WORKSPACE',request);
-    const after = JSON.parse(v2.clipboard.visualsJson);
-    assert.deepEqual(after[100].loadouts,loadouts);
-    assert.deepEqual(after[101],before[101]);
-    assert.equal(after[100].loadouts[0].loadoutElements.find(e=>e.slotType===97).itemAssetName,'PreservedUnknownSlot');
-  }
-}
-console.log('V2 equipment add/change/remove and protected field tests passed');

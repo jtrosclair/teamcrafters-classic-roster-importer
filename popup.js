@@ -15,68 +15,7 @@ const KEYS = {
 };
 const STUDIO_URL = 'https://www.teamcrafters.net/team-builder-unleashed/cfb27';
 const HELP_URL = 'https://www.teamcrafters.net/team-builder-unleashed/help';
-const updateManager = TeamBuilderUnleashedUpdates;
-
-function formatCheckedAt(timestamp) {
-  if (!timestamp) return 'Not checked yet.';
-  try {
-    return `Checked ${new Date(timestamp).toLocaleString()}.`;
-  } catch {
-    return 'Checked recently.';
-  }
-}
-
-function renderUpdate(state) {
-  const card = document.getElementById('updateStatus');
-  const label = document.getElementById('updateLabel');
-  const message = document.getElementById('updateText');
-  const link = document.getElementById('updateLink');
-  card.dataset.status = state?.status || 'unknown';
-  link.hidden = true;
-
-  if (!state || state.status === 'checking') {
-    label.textContent = 'Checking…';
-    message.textContent = 'Looking for the latest public release.';
-    return;
-  }
-
-  if (state.status === 'update-available') {
-    label.textContent = 'Update available';
-    message.textContent = `Version v${state.latestVersion} is ready. You have v${state.installedVersion}.`;
-    link.href = state.downloadUrl || state.releaseUrl;
-    link.textContent = state.downloadUrl ? 'Download update' : 'View release';
-    link.hidden = false;
-    return;
-  }
-
-  if (state.status === 'ahead') {
-    label.textContent = 'Newer build installed';
-    message.textContent = `You have v${state.installedVersion}; the latest public release is v${state.latestVersion}. ${formatCheckedAt(state.checkedAt)}`;
-    return;
-  }
-
-  if (state.status === 'up-to-date') {
-    label.textContent = 'Up to date';
-    message.textContent = `You have the latest public release (v${state.installedVersion}). ${formatCheckedAt(state.checkedAt)}`;
-    return;
-  }
-
-  label.textContent = 'Could not check';
-  message.textContent = state.lastError || 'No update result is available yet. Check your connection and try again.';
-}
-
-async function refreshUpdate(force = false) {
-  const button = document.getElementById('checkUpdateBtn');
-  button.disabled = true;
-  button.textContent = 'Checking…';
-  renderUpdate({ status: 'checking' });
-  try {
-    renderUpdate(await updateManager.checkForUpdates({ force }));
-  } finally {
-    button.disabled = false;
-    button.textContent = 'Check now';
-  }
-}
+document.getElementById('installedVersion').textContent = `v${chrome.runtime.getManifest().version}`;
 
 function renderMaintenance(stored) {
   const roster = stored[KEYS.roster];
@@ -119,14 +58,4 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (Object.values(KEYS).some((key) => changes[key])) {
     chrome.storage.local.get(Object.values(KEYS), renderMaintenance);
   }
-  if (changes[updateManager.UPDATE_STATE_KEY]) {
-    renderUpdate(changes[updateManager.UPDATE_STATE_KEY].newValue || null);
-  }
 });
-
-document.getElementById('checkUpdateBtn').addEventListener('click', () => {
-  void refreshUpdate(true);
-});
-
-void updateManager.getUpdateState().then(renderUpdate);
-void refreshUpdate();

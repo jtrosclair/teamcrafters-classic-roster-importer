@@ -44,7 +44,8 @@
   const MAX_ASSET_NAME_LENGTH = 512;
   const MAX_REQUEST_ID_LENGTH = 128;
 
-  // Slots exposed by the v1 web editor. Hidden calf placeholders 112/113 and body type are deliberately absent.
+  // Native equipment slots exposed by the v2 catalog. Hidden calf placeholders
+  // 112/113, body type 129, and retired cleat override slot 97 stay protected.
   const EDITABLE_SLOT_IDS = new Set([
     0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 95, 96, 101,
     106, 107, 108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122,

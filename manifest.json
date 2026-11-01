@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Team Builder Unleashed",
   "short_name": "TBU",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "author": "TeamCrafters",
   "description": "Team Builder Unleashed by TeamCrafters connects the web studio to EA Sports College Football 27 Team Builder.",
   "icons": {
@@ -20,17 +20,7 @@
       "128": "icons/icon128.png"
     }
   },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "permissions": ["alarms", "storage"],
-  "host_permissions": [
-    "https://www.ea.com/games/ea-sports-college-football/team-builder/*",
-    "https://www.teamcrafters.net/app/classic-rosters/*",
-    "https://teamcrafters.net/*",
-    "https://www.teamcrafters.net/*",
-    "https://api.github.com/*"
-  ],
+  "permissions": ["storage"],
   "content_scripts": [
     {
       "matches": [
@@ -92,15 +82,7 @@
         "https://www.teamcrafters.net/team-builder-unleashed",
         "https://www.teamcrafters.net/team-builder-unleashed/",
         "https://www.teamcrafters.net/team-builder-unleashed/cfb27",
-        "https://www.teamcrafters.net/team-builder-unleashed/cfb27/",
-        "http://localhost:3000/team-builder-unleashed",
-        "http://localhost:3000/team-builder-unleashed/",
-        "http://localhost:3000/team-builder-unleashed/cfb27",
-        "http://localhost:3000/team-builder-unleashed/cfb27/",
-        "http://localhost:3001/team-builder-unleashed",
-        "http://localhost:3001/team-builder-unleashed/",
-        "http://localhost:3001/team-builder-unleashed/cfb27",
-        "http://localhost:3001/team-builder-unleashed/cfb27/"
+        "https://www.teamcrafters.net/team-builder-unleashed/cfb27/"
       ],
       "js": [
         "roster-merge.js",
@@ -117,13 +99,7 @@
         "https://www.teamcrafters.net/cfb27/team-builder-unleashed",
         "https://www.teamcrafters.net/cfb27/team-builder-unleashed/",
         "https://www.teamcrafters.net/team-builder-unleashed/cfb27",
-        "https://www.teamcrafters.net/team-builder-unleashed/cfb27/",
-        "http://localhost/cfb27/team-builder-unleashed",
-        "http://localhost/cfb27/team-builder-unleashed/",
-        "http://localhost:3000/team-builder-unleashed/cfb27",
-        "http://localhost:3000/team-builder-unleashed/cfb27/",
-        "http://localhost:3001/team-builder-unleashed/cfb27",
-        "http://localhost:3001/team-builder-unleashed/cfb27/"
+        "https://www.teamcrafters.net/team-builder-unleashed/cfb27/"
       ],
       "js": ["equipment-web-bridge.js"],
       "world": "ISOLATED",
@@ -135,16 +111,13 @@
       "resources": [
         "base-template/roster.json",
         "base-template/character_visuals.json",
-      "reference/portrait-catalog.json",
-      "reference/mascots.json",
-      "reference/stadiums.json",
-      "uniform-catalog.json"
+        "reference/portrait-catalog.json",
+        "reference/mascots.json",
+        "reference/stadiums.json",
+        "uniform-catalog.json",
+        "sample-roster.csv"
       ],
-      "matches": [
-        "https://www.teamcrafters.net/*",
-        "http://localhost:3000/*",
-        "http://localhost:3001/*"
-      ]
+      "matches": ["https://www.teamcrafters.net/*"]
     }
   ],
   "options_ui": {

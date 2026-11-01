@@ -1,10 +1,10 @@
-// Local uniform limit configuration. Change maxUniforms, then reload the unpacked extension.
-// You might as why this is in a separate file, this is to give a borderline room-temperature IQ
-// test to anyone trying to create infinity uniforms. So it's not just given OOB.
-// Since everyone asked so nicely, there will be a "soft" limit, emphasis on SOFT.
+// Extra uniform slot creation is paused because EA patched the private creation path.
+// Keep the old soft-limit configuration here for when the workaround can be tested again.
+/*
 window.TeamCraftersUniformConfig = {
   maxUniforms: 10,
 };
+*/
 /**
 PS: I'm really bored. I've been out of work since June since the company went out of business.
 So I have a LOT of time to poke around now and find exploits in various things in the meantime!
