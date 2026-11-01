@@ -21,6 +21,11 @@ EA's Save button.
 The extension does not request access to your browsing history, passwords, or
 cookies. It does not include analytics, advertising, or crash reporting.
 
+The extension downloads public configuration and equipment, mascot, and stadium
+catalog data from the TeamCrafters CDN at `tc-cdn.trosclair.dev`. These requests
+omit credentials and contain no saved roster, team changes, or EA account data.
+Configuration and catalogs may be cached locally for use when the CDN is unavailable.
+
 ## Local storage and sharing
 
 Selected changes and roster data are stored in `chrome.storage.local` on your

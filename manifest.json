@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Team Builder Unleashed",
   "short_name": "TBU",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "author": "TeamCrafters",
   "description": "Team Builder Unleashed by TeamCrafters connects the web studio to EA Sports College Football 27 Team Builder.",
   "icons": {
@@ -85,6 +85,7 @@
         "https://www.teamcrafters.net/team-builder-unleashed/cfb27/"
       ],
       "js": [
+        "remote-config.js",
         "roster-merge.js",
         "cfb27-position-ovr-calculator.js",
         "csv-import.js",
@@ -101,7 +102,7 @@
         "https://www.teamcrafters.net/team-builder-unleashed/cfb27",
         "https://www.teamcrafters.net/team-builder-unleashed/cfb27/"
       ],
-      "js": ["equipment-web-bridge.js"],
+      "js": ["remote-config.js", "equipment-web-bridge.js"],
       "world": "ISOLATED",
       "run_at": "document_start"
     }

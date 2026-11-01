@@ -10,9 +10,13 @@ Chrome Web Store publishing uses a Chrome Web Store developer account; Google
 Play developer registration alone does not register that account.
 
 Build the upload file with `python3 tools/package-web-store.py`. Upload
-`release/team-builder-unleashed-web-store-v0.7.3.zip` in the Chrome Web Store
+`release/team-builder-unleashed-web-store-v0.7.4.zip` in the Chrome Web Store
 Developer Dashboard. `manifest.json` is at the root of the ZIP. The ZIP excludes
 tests, old releases, development data, and the GitHub release checker.
+
+Version 0.7.4 adds validated remote JSON options and public catalog downloads.
+All execution and save logic stays in the submitted package; no additional
+extension permissions are requested.
 
 ## Suggested listing copy
 

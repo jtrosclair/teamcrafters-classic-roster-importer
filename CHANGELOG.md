@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.7.4 — 2026-11-01
+
+- Load the equipment catalog location, editable equipment slots, and mascot/stadium
+  catalog locations from validated remote JSON options.
+- Refresh options after five minutes and retain the last valid response offline,
+  with bundled defaults and catalogs as a fallback.
+- Keep equipment edits limited to the existing gear loadout. Body settings,
+  internal calf slots, retired slot 97, save logic, and extension permissions
+  remain protected by packaged code.
+- Add no remote scripts, commands, transformations, or feature logic.
+
 ## v0.7.3 — 2026-11-01
 
 - Align the GitHub release with the Chrome Web Store package, including the expanded

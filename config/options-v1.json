@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-11-01.1",
+  "equipment": {
+    "catalogBaseUrl": "https://tc-cdn.trosclair.dev/team-builder-assets/cfb27/equipment/v2/2026-10-29",
+    "editableSlotIds": [
+      0,
+      2,
+      9,
+      10,
+      11,
+      12,
+      25,
+      26,
+      29,
+      30,
+      51,
+      54,
+      71,
+      72,
+      95,
+      96,
+      101,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      114,
+      115,
+      116,
+      117,
+      118,
+      120,
+      121,
+      122,
+      124,
+      125,
+      127,
+      128,
+      135,
+      140,
+      142,
+      143
+    ]
+  },
+  "catalogs": {
+    "mascotsUrl": "https://tc-cdn.trosclair.dev/team-builder-assets/cfb27/catalogs/2026-11-01/mascots.json",
+    "stadiumsUrl": "https://tc-cdn.trosclair.dev/team-builder-assets/cfb27/catalogs/2026-11-01/stadiums.json"
+  }
+}

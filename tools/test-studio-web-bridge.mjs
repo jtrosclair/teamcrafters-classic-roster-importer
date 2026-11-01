@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import fs from "node:fs";
+import remoteOptions from "../remote-config.js";
 import vm from "node:vm";
 
 const source = fs.readFileSync(
@@ -122,12 +123,13 @@ const uniformCatalog = {
   },
 };
 
-function harness(initialClipboard) {
+function harness(initialClipboard, config = remoteOptions.DEFAULTS) {
   let storage = { tcRosterClipboard: clone(initialClipboard) };
   let messageListener = null;
   let storageListener = null;
   const posted = [];
   const windowObject = {
+    TBURemoteOptions: { get: async () => clone(config), loadCatalog: async () => { throw new Error("Catalog fixture not provided"); } },
     location: { origin, pathname: "/team-builder-unleashed/cfb27" },
     addEventListener(type, listener) {
       if (type === "message") messageListener = listener;
@@ -260,6 +262,7 @@ assert.ok(
   ready.payload.capabilities.includes("player.equipment.catalog.v2"),
   "the studio advertises the expanded equipment slots",
 );
+assert.ok(ready.payload.capabilities.includes("player.equipment.remoteOptions.v1"));
 assert.ok(
   !ready.payload.capabilities.includes("uniforms.override"),
   "the studio does not advertise paused uniform importing",
@@ -419,12 +422,15 @@ const rejected = await test.waitFor("TC_STUDIO_ERROR", "equipment");
 assert.equal(rejected.payload.code, "INVALID_PAYLOAD");
 assert.match(rejected.payload.message, /Appearance, not Equipment/);
 
-const expanded = harness(clipboard());
+const expandedConfig = clone(remoteOptions.DEFAULTS);
+expandedConfig.equipment.editableSlotIds.push(150);
+const expanded = harness(clipboard(), expandedConfig);
 expanded.dispatch("TC_STUDIO_GET_WORKSPACE", {}, "expanded-read");
 const expandedWorkspace = await expanded.waitFor("TC_STUDIO_WORKSPACE", "expanded-read");
 const expandedLoadouts = JSON.parse(expanded.clipboard.visualsJson)["100"].loadouts;
 const expandedGear = expandedLoadouts.find((loadout) => loadout.loadoutCategory === 0);
 const newEquipment = [
+    [150, "Test_Future_Equipment"],
   [95, "U_GENERIC_SHOESX_BLAPRI"],
   [96, "U_GENERIC_SHOESX_BLAPRI"],
   [128, "FaceGear_BalaclavaOverNose"],

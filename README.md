@@ -50,7 +50,7 @@ The extension appears in your toolbar; use the puzzle-piece icon to pin it.
 
 You can also install the GitHub release manually:
 
-1. Download `team-builder-unleashed-v0.7.3.zip` from the [Releases](../../releases) page.
+1. Download `team-builder-unleashed-v0.7.4.zip` from the [Releases](../../releases) page.
 2. Unzip it into a folder you will keep on your computer.
 3. Open `chrome://extensions` and turn on **Developer mode**.
 4. Click **Load unpacked** and select the unzipped folder.
@@ -356,6 +356,10 @@ any open TeamCrafters / Team Builder tabs. Editing files on disk does **not** au
 To build the Chrome Web Store ZIP, run `python3 tools/package-web-store.py`.
 The generated ZIP in `release/` contains the complete extension with `manifest.json`
 at its root. See [Web Store submission notes](WEB_STORE.md) for listing and update steps.
+
+Equipment catalog locations, editable equipment slots, and mascot/stadium catalog
+locations can be updated through validated remote JSON. See [Remote options](REMOTE_OPTIONS.md)
+for the schema, publishing instructions, caching, and fixed protection rules.
 
 The merge logic stays pure when given the bundled portrait catalog, so you can exercise it in Node
 against the bundled template:

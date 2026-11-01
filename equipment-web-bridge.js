@@ -34,6 +34,7 @@
     'clipboard.write.visuals',
     'clipboard.revision',
     'clipboard.subscribe',
+    'clipboard.remoteOptions.v1',
   ];
 
   // The current roster pair is well under 1 MiB minified. Leave headroom for future visual fields
@@ -43,14 +44,6 @@
   const MAX_PLAYER_COUNT = 100;
   const MAX_ASSET_NAME_LENGTH = 512;
   const MAX_REQUEST_ID_LENGTH = 128;
-
-  // Native equipment slots exposed by the v2 catalog. Hidden calf placeholders
-  // 112/113, body type 129, and retired cleat override slot 97 stay protected.
-  const EDITABLE_SLOT_IDS = new Set([
-    0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 95, 96, 101,
-    106, 107, 108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122,
-    124, 125, 127, 128, 135, 140, 142, 143,
-  ]);
 
   const suppressedChangeRevisions = new Set();
   const textEncoder = new TextEncoder();
@@ -216,13 +209,13 @@
     return 0;
   }
 
-  function assertEditableSlot(slotId, category, label) {
-    if (!EDITABLE_SLOT_IDS.has(slotId) || expectedCategoryForSlot(slotId) !== category) {
+  function assertEditableSlot(slotId, category, label, slotIds) {
+    if (!slotIds.has(slotId) || expectedCategoryForSlot(slotId) !== category) {
       throw new BridgeError('INVALID_PAYLOAD', `${label} attempted to change a hidden or incompatible equipment slot.`);
     }
   }
 
-  function assertExistingLoadoutPreserved(current, next, playerId) {
+  function assertExistingLoadoutPreserved(current, next, playerId, slotIds) {
     if (!isRecord(next) || !deepEqual(withoutKey(current, 'loadoutElements'), withoutKey(next, 'loadoutElements'))) {
       throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} changed non-equipment loadout fields.`);
     }
@@ -243,7 +236,7 @@
       // Stock Team Builder represents absent equipment and disabled render overrides by
       // omitting their elements. Permit that only for slots this editor exposes.
       if (!isRecord(after) || Number(after.slotType) !== slotId) {
-        assertEditableSlot(slotId, category, `Player ${playerId}`);
+        assertEditableSlot(slotId, category, `Player ${playerId}`, slotIds);
         continue;
       }
       if (!deepEqual(withoutKey(before, 'itemAssetName'), withoutKey(after, 'itemAssetName'))) {
@@ -251,7 +244,7 @@
       }
       seenSlots.add(slotId);
       if (before.itemAssetName !== after.itemAssetName) {
-        assertEditableSlot(slotId, category, `Player ${playerId}`);
+        assertEditableSlot(slotId, category, `Player ${playerId}`, slotIds);
         assertValidAssetName(after.itemAssetName, `Player ${playerId} slot ${slotId}`);
       }
       nextIndex += 1;
@@ -265,13 +258,13 @@
       if (seenSlots.has(slotId) || currentSlots.has(slotId)) {
         throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} added a duplicate equipment slot.`);
       }
-      assertEditableSlot(slotId, category, `Player ${playerId}`);
+      assertEditableSlot(slotId, category, `Player ${playerId}`, slotIds);
       assertValidAssetName(element.itemAssetName, `Player ${playerId} slot ${slotId}`);
       seenSlots.add(slotId);
     }
   }
 
-  function assertNewLoadoutValid(loadout, existingCategories, playerId) {
+  function assertNewLoadoutValid(loadout, existingCategories, playerId, slotIds) {
     if (!isRecord(loadout) || !hasOnlyKeys(loadout, ['loadoutCategory', 'loadoutElements', 'loadoutType'])) {
       throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} added an invalid loadout.`);
     }
@@ -290,7 +283,7 @@
       if (seenSlots.has(slotId)) {
         throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} added a duplicate equipment slot.`);
       }
-      assertEditableSlot(slotId, category, `Player ${playerId}`);
+      assertEditableSlot(slotId, category, `Player ${playerId}`, slotIds);
       assertValidAssetName(element.itemAssetName, `Player ${playerId} slot ${slotId}`);
       seenSlots.add(slotId);
     }
@@ -299,7 +292,7 @@
 
   // Enforce the contract's visual-preservation rule at the storage boundary. This turns a page
   // bug into a rejected save instead of silently changing player identity or appearance metadata.
-  function assertOnlyEquipmentChanged(currentVisuals, nextVisuals) {
+  function assertOnlyEquipmentChanged(currentVisuals, nextVisuals, slotIds) {
     for (const playerId of Object.keys(currentVisuals)) {
       const current = currentVisuals[playerId];
       const next = nextVisuals[playerId];
@@ -312,11 +305,11 @@
         throw new BridgeError('INVALID_PAYLOAD', `Player ${playerId} removed existing loadouts.`);
       }
       for (let index = 0; index < currentLoadouts.length; index++) {
-        assertExistingLoadoutPreserved(currentLoadouts[index], nextLoadouts[index], playerId);
+        assertExistingLoadoutPreserved(currentLoadouts[index], nextLoadouts[index], playerId, slotIds);
       }
       const categories = new Set(currentLoadouts.map((loadout) => Number(loadout.loadoutCategory)));
       for (const loadout of nextLoadouts.slice(currentLoadouts.length)) {
-        assertNewLoadoutValid(loadout, categories, playerId);
+        assertNewLoadoutValid(loadout, categories, playerId, slotIds);
       }
     }
   }
@@ -415,6 +408,9 @@
     assertRequestId(message);
     assertPutPayload(message.payload);
 
+    const config = await window.TBURemoteOptions.get();
+    const slotIds = new Set(config.equipment.editableSlotIds);
+
     // Re-read immediately before validation/write. Never merge against the earlier GET snapshot.
     const current = await readStoredClipboard();
     const { roster, visuals: currentVisuals } = assertCurrentClipboard(current);
@@ -433,7 +429,7 @@
     );
     assertVisualMapShape(nextVisuals, 'Character visuals');
     assertSamePlayerIds(roster, currentVisuals, nextVisuals);
-    assertOnlyEquipmentChanged(currentVisuals, nextVisuals);
+    assertOnlyEquipmentChanged(currentVisuals, nextVisuals, slotIds);
 
     const next = {
       ...current,

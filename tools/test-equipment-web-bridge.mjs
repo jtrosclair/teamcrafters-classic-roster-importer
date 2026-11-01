@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import fs from 'node:fs';
+import remoteOptions from "../remote-config.js";
 import vm from 'node:vm';
 
 const BRIDGE_SOURCE = fs.readFileSync(new URL('../equipment-web-bridge.js', import.meta.url), 'utf8');
@@ -74,7 +75,7 @@ function fixtureClipboard() {
   };
 }
 
-function createHarness(initialClipboard, { origin = ORIGIN, pathname = PATH } = {}) {
+function createHarness(initialClipboard, { origin = ORIGIN, pathname = PATH, config = remoteOptions.DEFAULTS } = {}) {
   let clipboard = clone(initialClipboard);
   let messageListener = null;
   let storageListener = null;
@@ -82,6 +83,7 @@ function createHarness(initialClipboard, { origin = ORIGIN, pathname = PATH } = 
   const posted = [];
 
   const windowObject = {
+    TBURemoteOptions: { get: async () => clone(config), loadCatalog: async () => { throw new Error("Catalog fixture not provided"); } },
     location: { origin, pathname },
     addEventListener(type, listener) {
       if (type === 'message') messageListener = listener;
@@ -200,6 +202,7 @@ async function run() {
     'clipboard.write.visuals',
     'clipboard.revision',
     'clipboard.subscribe',
+    'clipboard.remoteOptions.v1',
   ]);
 
   harness.dispatch(harness.envelope('TC_UNLEASHED_GET_CLIPBOARD', {}, 'get-1'));
@@ -301,11 +304,14 @@ async function run() {
   assert.equal(hiddenRemoval.payload.code, 'INVALID_PAYLOAD');
   assert.match(hiddenRemoval.payload.message, /hidden or incompatible equipment slot/i);
 
-  const expandedHarness = createHarness(fixtureClipboard());
+  const expandedConfig = clone(remoteOptions.DEFAULTS);
+  expandedConfig.equipment.editableSlotIds.push(150);
+  const expandedHarness = createHarness(fixtureClipboard(), { config: expandedConfig });
   expandedHarness.dispatch(expandedHarness.envelope('TC_UNLEASHED_GET_CLIPBOARD', {}, 'expanded-read'));
   const expandedRead = await expandedHarness.waitFor('TC_UNLEASHED_CLIPBOARD', 'expanded-read');
   const expandedVisuals = JSON.parse(expandedRead.payload.clipboard.visualsJson);
   const newEquipment = [
+    [150, "Test_Future_Equipment"],
     [95, 'U_GENERIC_SHOESX_BLAPRI'],
     [96, 'U_GENERIC_SHOESX_BLAPRI'],
     [128, 'FaceGear_BalaclavaOverNose'],
