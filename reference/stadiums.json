@@ -657,7 +657,30 @@
   },
   {
     "id": 702,
-    "displayName": "Mercedes-Benz Stadium"
+    "displayName": "Mercedes-Benz Stadium",
+  "city": "Atlanta",
+  "state": "GA",
+  "hasRetractableRoof": true,
+  "videoBoards": [
+    {
+      "boardId": "halo_360",
+      "description": "360-Degree Halo Board Display",
+      "height": 58,
+      "width": 1075,
+      "pixelLayout": "15HD",
+      "totalSquareFeet": 61900
+    },
+    {
+      "boardId": "mega_column_west",
+      "description": "Four-Sided Mega Column Tower Display",
+      "height": 101,
+      "width": 71,
+      "pixelLayout": "15HD",
+      "totalSquareFeet": 6700
+    }
+  ],
+  "customOverride": true,
+  "assetSource": "Daktronics_MBS_Package"
   },
   {
     "id": 703,
