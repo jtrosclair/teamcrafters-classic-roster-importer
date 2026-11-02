@@ -613,5 +613,15 @@
         "TMAN":  "WYO",
         "TeamName":  "Wyoming",
         "MascotName":  "Pistol Pete"
+    },
+    {
+      "TMAN": "NDSU",
+      "TeamName": "North Dakota",
+      "MascotName": "Thundar"
+    },
+    {
+      "TMAN": "SACST",
+      "TeamName": "Sacramento State",
+      "MascotName": "Herky"
     }
 ]

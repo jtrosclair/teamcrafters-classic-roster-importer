@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.7.4 — 2026-11-01
+
+- Load the equipment catalog location, editable equipment slots, and mascot/stadium
+  catalog locations from validated remote JSON options.
+- Refresh options after five minutes and retain the last valid response offline,
+  with bundled defaults and catalogs as a fallback.
+- Keep equipment edits limited to the existing gear loadout. Body settings,
+  internal calf slots, retired slot 97, save logic, and extension permissions
+  remain protected by packaged code.
+- Add no remote scripts, commands, transformations, or feature logic.
+
+## v0.7.3 — 2026-11-01
+
+- Align the GitHub release with the Chrome Web Store package, including the expanded
+  CFB 27 equipment slots for balaclavas, guardian caps, turtlenecks, and separate
+  left and right cleat color overrides.
+- Use the Studio's current equipment catalog, including the October 29 facemask
+  additions, while preserving body settings and unrelated player data.
+- Pause uniform importing and the extra uniform-slot workaround after EA's patch.
+- Remove the GitHub update checker and its background worker, alarms, and host
+  permissions. Chrome Web Store installs receive updates through Chrome; unpacked
+  installs can download and reload the latest GitHub release.
+- Add reproducible packaging and regression checks for adding, clearing, and
+  protecting equipment slots.
+
+Refresh Team Builder and the Studio after reloading the updated extension. Choose
+another roster preset, then TeamCrafters, before saving in EA Team Builder.
+
 ## v0.7.2 — 2026-09-04
 
 - Support the expanded CFB 27 equipment catalog, including balaclavas, guardian caps, and turtlenecks.

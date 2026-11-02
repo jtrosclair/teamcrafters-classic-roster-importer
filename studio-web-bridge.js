@@ -28,11 +28,7 @@
   const STADIUM_KEY = "tcStadiumClipboard";
   const UNIFORM_KEY = "tcUniformClipboard";
   const SCHOOL_TEMPLATE_KEY = "tcSchoolTemplates";
-  const EQUIPMENT_SLOT_IDS = new Set([
-    0, 2, 9, 10, 11, 12, 25, 26, 29, 30, 51, 54, 71, 72, 95, 96, 101, 106, 107,
-    108, 109, 110, 111, 114, 115, 116, 117, 118, 120, 121, 122, 124, 125, 127,
-    128, 129, 135, 140, 142, 143,
-  ]);
+  const UNIFORM_IMPORT_ENABLED = false;
   const BODY_TYPE_SLOT_ID = 129;
   const LEFT_CLEAT_SLOT_ID = 10;
   const RIGHT_CLEAT_SLOT_ID = 11;
@@ -289,10 +285,10 @@
     );
   }
 
-  function isEditableEquipmentElement(loadout, element) {
+  function isEditableEquipmentElement(loadout, element, slotIds) {
     return (
       Number(loadout.loadoutCategory) === 0 &&
-      EQUIPMENT_SLOT_IDS.has(element.slotType) &&
+      slotIds.has(element.slotType) &&
       element.slotType !== BODY_TYPE_SLOT_ID
     );
   }
@@ -304,7 +300,7 @@
     );
   }
 
-  function assertOnlyEquipmentChanged(currentLoadouts, nextLoadouts) {
+  function assertOnlyEquipmentChanged(currentLoadouts, nextLoadouts, slotIds) {
     if (
       !Array.isArray(currentLoadouts) ||
       currentLoadouts.length !== nextLoadouts.length
@@ -348,7 +344,7 @@
       for (const [slotType, currentElement] of currentBySlot) {
         const nextElement = nextBySlot.get(slotType);
         if (!nextElement) {
-          if (!isEditableEquipmentElement(currentLoadout, currentElement))
+          if (!isEditableEquipmentElement(currentLoadout, currentElement, slotIds))
             throw Object.assign(
               new Error(
                 "The equipment update changed a protected player setting.",
@@ -359,7 +355,7 @@
         }
         if (deepEqual(currentElement, nextElement)) continue;
         if (
-          !isEditableEquipmentElement(currentLoadout, currentElement) ||
+          !isEditableEquipmentElement(currentLoadout, currentElement, slotIds) ||
           !deepEqual(
             withoutKey(currentElement, "itemAssetName"),
             withoutKey(nextElement, "itemAssetName"),
@@ -376,7 +372,7 @@
       for (const [slotType, nextElement] of nextBySlot) {
         if (currentBySlot.has(slotType)) continue;
         if (
-          !isEditableEquipmentElement(nextLoadout, nextElement) ||
+          !isEditableEquipmentElement(nextLoadout, nextElement, slotIds) ||
           !hasOnlyElementKeys(nextElement)
         )
           throw Object.assign(
@@ -563,46 +559,46 @@
         }),
       );
     }
-    return chrome.storage.local
-      .get([ROSTER_KEY, MASCOT_KEY, STADIUM_KEY])
-      .then(async (storage) => {
-        if (payload.expectedRevision !== (await revisionFor(storage)))
-          throw Object.assign(
-            new Error(
-              "The roster changed. Refresh it before saving equipment.",
-            ),
-            { code: "REVISION_CONFLICT" },
-          );
-        const clipboard = storage[ROSTER_KEY];
-        const { visuals, playerIds } = readPlayerMaps(clipboard);
-        const playerId = text(payload.patch.playerId);
-        const loadouts = safeEquipmentLoadouts(payload.patch.loadouts);
-        if (!playerIds.includes(playerId) || loadouts === null)
-          throw Object.assign(
-            new Error(
-              "The equipment selection is not valid. Please choose it again.",
-            ),
-            { code: "INVALID_PAYLOAD" },
-          );
-        if (
-          bodyLoadoutSignature(visuals[playerId].loadouts) !==
-          bodyLoadoutSignature(loadouts)
-        )
-          throw Object.assign(
-            new Error("Change body type from Appearance, not Equipment."),
-            { code: "INVALID_PAYLOAD" },
-          );
-        assertOnlyEquipmentChanged(visuals[playerId].loadouts, loadouts);
-        visuals[playerId].loadouts = loadouts;
-        await writeStudioWorkspace({
-          [ROSTER_KEY]: {
-            ...clipboard,
-            visualsJson: JSON.stringify(visuals),
-            equipmentEditedAt: new Date().toISOString(),
-          },
-        });
-        return getWorkspace();
+    return window.TBURemoteOptions.get().then(async (config) => {
+      const slotIds = new Set(config.equipment.editableSlotIds);
+      const storage = await chrome.storage.local.get([ROSTER_KEY, MASCOT_KEY, STADIUM_KEY]);
+      if (payload.expectedRevision !== (await revisionFor(storage)))
+        throw Object.assign(
+          new Error(
+            "The roster changed. Refresh it before saving equipment.",
+          ),
+          { code: "REVISION_CONFLICT" },
+        );
+      const clipboard = storage[ROSTER_KEY];
+      const { visuals, playerIds } = readPlayerMaps(clipboard);
+      const playerId = text(payload.patch.playerId);
+      const loadouts = safeEquipmentLoadouts(payload.patch.loadouts);
+      if (!playerIds.includes(playerId) || loadouts === null)
+        throw Object.assign(
+          new Error(
+            "The equipment selection is not valid. Please choose it again.",
+          ),
+          { code: "INVALID_PAYLOAD" },
+        );
+      if (
+        bodyLoadoutSignature(visuals[playerId].loadouts) !==
+        bodyLoadoutSignature(loadouts)
+      )
+        throw Object.assign(
+          new Error("Change body type from Appearance, not Equipment."),
+          { code: "INVALID_PAYLOAD" },
+        );
+      assertOnlyEquipmentChanged(visuals[playerId].loadouts, loadouts, slotIds);
+      visuals[playerId].loadouts = loadouts;
+      await writeStudioWorkspace({
+        [ROSTER_KEY]: {
+          ...clipboard,
+          visualsJson: JSON.stringify(visuals),
+          equipmentEditedAt: new Date().toISOString(),
+        },
       });
+      return getWorkspace();
+    });
   }
 
   function safeMascot(value) {
@@ -835,24 +831,8 @@
   async function loadCatalogs() {
     if (catalogsPromise) return catalogsPromise;
     catalogsPromise = Promise.all([
-      fetch(chrome.runtime.getURL("reference/mascots.json")).then(
-        (response) => {
-          if (!response.ok)
-            throw new Error(
-              `Mascot catalog request failed (${response.status}).`,
-            );
-          return response.json();
-        },
-      ),
-      fetch(chrome.runtime.getURL("reference/stadiums.json")).then(
-        (response) => {
-          if (!response.ok)
-            throw new Error(
-              `Stadium catalog request failed (${response.status}).`,
-            );
-          return response.json();
-        },
-      ),
+      window.TBURemoteOptions.loadCatalog("mascots", chrome.runtime.getURL("reference/mascots.json")),
+      window.TBURemoteOptions.loadCatalog("stadiums", chrome.runtime.getURL("reference/stadiums.json")),
     ])
       .then(([mascotRows, stadiumRows]) => {
         if (!Array.isArray(mascotRows) || !Array.isArray(stadiumRows))
@@ -876,10 +856,7 @@
           throw new Error("The Team Builder catalogs are empty.");
         return { mascots, stadiums };
       })
-      .catch((error) => {
-        catalogsPromise = null;
-        throw error;
-      });
+      .finally(() => { catalogsPromise = null; });
     return catalogsPromise;
   }
 
@@ -1169,26 +1146,28 @@
       return;
 
     if (message.type === "TC_STUDIO_HELLO") {
+      const capabilities = [
+        "workspace.read",
+        "workspace.subscribe",
+        "workspace.import",
+        "identity.read",
+        "identity.write",
+        "identity.revision",
+        "schoolTemplates.read",
+        "schoolTemplates.write",
+        "player.appearance.read",
+        "player.appearance.write",
+        "player.appearance.bodyType.write",
+        "player.equipment.read",
+        "player.equipment.write",
+        "player.equipment.catalog.v2",
+        "player.equipment.remoteOptions.v1",
+      ];
+      if (UNIFORM_IMPORT_ENABLED) capabilities.push("uniforms.override");
       post("TC_STUDIO_READY", {
         extensionVersion: chrome.runtime.getManifest().version,
         supportedGames: ["CFB27"],
-        capabilities: [
-          "workspace.read",
-          "workspace.subscribe",
-          "workspace.import",
-          "identity.read",
-          "identity.write",
-          "identity.revision",
-          "uniforms.override",
-          "schoolTemplates.read",
-          "schoolTemplates.write",
-          "player.appearance.read",
-          "player.appearance.write",
-          "player.appearance.bodyType.write",
-          "player.equipment.read",
-          "player.equipment.write",
-          "player.equipment.catalog.v2",
-        ],
+        capabilities,
       });
       return;
     }
@@ -1224,21 +1203,35 @@
                     post("TC_STUDIO_WRITE_RESULT", payload, message.requestId),
                   )
                 : message.type === "TC_STUDIO_GET_UNIFORM_OVERRIDE"
-                  ? getUniformOverride().then((payload) =>
-                      post(
-                        "TC_STUDIO_UNIFORM_OVERRIDE",
-                        payload,
-                        message.requestId,
-                      ),
-                    )
-                  : message.type === "TC_STUDIO_SAVE_UNIFORM_OVERRIDE"
-                    ? saveUniformOverride(message.payload).then((payload) =>
+                  ? UNIFORM_IMPORT_ENABLED
+                    ? getUniformOverride().then((payload) =>
                         post(
                           "TC_STUDIO_UNIFORM_OVERRIDE",
                           payload,
                           message.requestId,
                         ),
                       )
+                    : Promise.reject(
+                        Object.assign(
+                          new Error("Uniform importing is temporarily unavailable."),
+                          { code: "FEATURE_UNAVAILABLE" },
+                        ),
+                      )
+                  : message.type === "TC_STUDIO_SAVE_UNIFORM_OVERRIDE"
+                    ? UNIFORM_IMPORT_ENABLED
+                      ? saveUniformOverride(message.payload).then((payload) =>
+                          post(
+                            "TC_STUDIO_UNIFORM_OVERRIDE",
+                            payload,
+                            message.requestId,
+                          ),
+                        )
+                      : Promise.reject(
+                          Object.assign(
+                            new Error("Uniform importing is temporarily unavailable."),
+                            { code: "FEATURE_UNAVAILABLE" },
+                          ),
+                        )
                 : message.type === "TC_STUDIO_GET_SCHOOL_TEMPLATES"
                   ? getSchoolTemplates().then((payload) =>
                       post(

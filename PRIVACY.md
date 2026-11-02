@@ -1,38 +1,42 @@
-# Privacy
+# Team Builder Unleashed privacy policy
 
-This extension is built by TeamCrafters. It does not collect, transmit, or sell any data to
-anyone.
+Team Builder Unleashed is a Chrome extension by TeamCrafters. Its purpose is to carry
+changes selected in the TeamCrafters web studio into EA Team Builder when you use
+EA's Save button.
 
-## Where it runs
+## Sites and information used
 
-It only loads on two specific places — nowhere else on the web:
+- On supported TeamCrafters pages, the extension reads the roster or team you choose
+  to copy. The page requests its roster data from TeamCrafters so the extension can
+  prepare it for Team Builder.
+- On the Team Builder Unleashed Studio page, the extension exchanges your selected
+  roster, player, equipment, stadium, mascot, and template changes with the web
+  studio. The exchange stays in your browser; the extension does not send its stored
+  clipboard to a TeamCrafters server.
+- On EA Team Builder pages, the extension reads the relevant roster and team data
+  that the page loads. It adjusts the roster preset and selected team data in the
+  browser. When you press EA's Save button, EA receives the team data you chose to
+  save through its normal service.
 
-- `https://www.teamcrafters.net/app/classic-rosters/*` (classic roster pages)
-- `https://www.ea.com/games/ea-sports-college-football/team-builder/*` (EA Team Builder)
+The extension does not request access to your browsing history, passwords, or
+cookies. It does not include analytics, advertising, or crash reporting.
 
-## What it accesses
+The extension downloads public configuration and equipment, mascot, and stadium
+catalog data from the TeamCrafters CDN at `tc-cdn.trosclair.dev`. These requests
+omit credentials and contain no saved roster, team changes, or EA account data.
+Configuration and catalogs may be cached locally for use when the CDN is unavailable.
 
-- **TeamCrafters classic-roster pages**: when you click "Copy roster", it requests that team's
-  roster export with a normal same-origin request in your own browser session. No TeamCrafters
-  login, cookies, or credentials are read or transmitted by the extension.
-- **EA Team Builder**: it watches the page's own network calls and responds to exactly three of
-  them — the roster-presets list (to add the copied roster as a preset), the two asset URLs
-  belonging to that injected preset (answered locally from your copied roster), and the
-  name-generator pool (emptied while a roster is copied, so imported names aren't overwritten).
-  It does not read or modify any other request, page content, cookie, or EA credential.
+## Local storage and sharing
 
-## What it stores
+Selected changes and roster data are stored in `chrome.storage.local` on your
+device. They remain there until you replace or remove them, or uninstall the
+extension. The popup and options page provide controls to remove saved changes.
 
-- The most recently copied roster is kept in `chrome.storage.local`, on your device only. It is
-  overwritten the next time you copy a different roster, or removed with the popup's "Clear
-  copied roster" button.
+TeamCrafters pages and EA Team Builder receive the data needed for the actions
+above. TeamCrafters does not sell data collected through this extension, and the
+extension does not send its local storage to a separate analytics service.
 
-## What it does NOT do
+## Contact
 
-- No analytics, telemetry, or crash reporting.
-- No network requests to any server other than teamcrafters.net, to fetch the export you asked
-  for. The injected preset's asset URLs are answered locally and never leave your machine.
-- It never uploads anything to EA, and never modifies what EA saves. Loading a preset only
-  changes the roster in the editor; persisting it is entirely EA's own **Save** button, which
-  you press yourself.
-- No reading of other tabs, browsing history, passwords, or autofill data.
+For questions, contact TeamCrafters through the support link in the extension or
+the project's GitHub issues page.

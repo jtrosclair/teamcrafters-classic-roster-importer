@@ -23,7 +23,7 @@ Built by TeamCrafters. Not affiliated with, endorsed by, or associated with Elec
 
 The Studio is where you make changes. The extension is the small connection between the Studio and
 EA Team Builder. It shows a compact list of changes ready for your next save in the top-left corner
-of Team Builder, where you can turn an individual stadium, mascot, or uniform change on or off.
+of Team Builder, where you can turn an individual stadium or mascot change on or off.
 
 Use the Studio's plain-language guides whenever you need help:
 [Team Builder Unleashed Help](https://www.teamcrafters.net/team-builder-unleashed/help).
@@ -43,15 +43,26 @@ teams they create, as long as they can access Team Builder from a computer runni
 
 ## Install
 
-This isn't in the Chrome Web Store, so you load it manually. Takes about a minute.
+Install **Team Builder Unleashed** from the
+[Chrome Web Store](https://chromewebstore.google.com/detail/team-builder-unleashed/eijdlhodkkagjhdidffldhbimkdddepc).
+Chrome updates store-installed extensions automatically.
+The extension appears in your toolbar; use the puzzle-piece icon to pin it.
 
-1. Download the latest release ZIP from the [Releases](../../releases) page.
-2. Unzip it into a new folder named `team-builder-unleashed-v0.7.2`.
-   Put that folder somewhere you won't delete by accident (not your Downloads folder).
-3. Open Chrome and go to `chrome://extensions`
-4. Turn on **Developer mode** (toggle, top-right).
-5. Click **Load unpacked** and select the folder you unzipped.
-6. The extension appears in your toolbar. (Click the puzzle-piece icon → pin it.)
+You can also install the GitHub release manually:
+
+1. Download `team-builder-unleashed-v0.7.4.zip` from the [Releases](../../releases) page.
+2. Unzip it into a folder you will keep on your computer.
+3. Open `chrome://extensions` and turn on **Developer mode**.
+4. Click **Load unpacked** and select the unzipped folder.
+
+To update an existing unpacked install, replace the files in its existing folder
+with the new release and click **Reload** on its card in `chrome://extensions`.
+Unpacked installs require these manual updates.
+
+If you currently use an unpacked copy, copy or re-create any staged changes before
+switching. The store copy has a different extension ID, so Chrome does not transfer
+the unpacked copy's `chrome.storage.local` data to it. Remove the unpacked copy in
+`chrome://extensions` after confirming the store copy works.
 
 If the Studio or EA Team Builder was already open, reload those tabs.
 
@@ -145,11 +156,11 @@ not reliably appear unless EA reloads the refreshed TeamCrafters preset.
 
 ## Uniforms
 
-Choose uniform overrides in the CFB 27 Studio's **Uniforms** tab, then save normally in Team
-Builder. Read the [uniform guide](https://www.teamcrafters.net/team-builder-unleashed/help/cfb27/uniforms)
-before saving: an override replaces every uniform on your team with the selected real team's
-uniforms, and EA may patch this behavior at any time. The extension shows any staged override and
-lets you turn it off or remove it safely.
+Uniform importing and extra uniform slots are temporarily paused after an EA patch. The extension
+does not advertise uniform-import support and will not apply a previously staged uniform override
+when you save. Existing stored selections are retained for now so they can be recovered if support
+returns. Follow the [TeamCrafters uniform update](https://x.com/teamcrafters_fb/status/2092436446892249417?s=46)
+for progress.
 
 ## Troubleshooting
 
@@ -223,8 +234,8 @@ closure-bound and effectively unreachable in the production build). It:
 | `csv-export.js` | isolated | classic-roster pages | The reverse — normalized roster to CSV, reusing `csv-import.js`'s tables so the two can't drift |
 | `cfb27-position-ovr-calculator.js` | — | — | Archetype-weighted OVR calculation used by the Studio bridge |
 | `sample-roster.csv` | — | — | Complete 85-player sample, generated from the base template |
-| `uniform-build.js` | — | — | Converts catalog uniforms into EA's payload shape for the save bridge |
-| `uniform-catalog.json` | — | — | 150 selectable groups / 1,167 uniforms decoded from CFB 27 |
+| `uniform-build.js` | — | — | Dormant uniform conversion code retained while importing is paused |
+| `uniform-catalog.json` | — | — | Dormant decoded uniform catalog retained while importing is paused |
 | `base-template/` | — | — | A real EA preset (Cupcake) used as the merge base |
 | `reference/` | — | — | EA head catalog + sample team payload, reference only |
 
@@ -341,6 +352,14 @@ for f in *.js; do node --check "$f"; done
 
 After editing, hit the reload icon on the extension's card in `chrome://extensions`, then reload
 any open TeamCrafters / Team Builder tabs. Editing files on disk does **not** auto-reload it.
+
+To build the Chrome Web Store ZIP, run `python3 tools/package-web-store.py`.
+The generated ZIP in `release/` contains the complete extension with `manifest.json`
+at its root. See [Web Store submission notes](WEB_STORE.md) for listing and update steps.
+
+Equipment catalog locations, editable equipment slots, and mascot/stadium catalog
+locations can be updated through validated remote JSON. See [Remote options](REMOTE_OPTIONS.md)
+for the schema, publishing instructions, caching, and fixed protection rules.
 
 The merge logic stays pure when given the bundled portrait catalog, so you can exercise it in Node
 against the bundled template:
